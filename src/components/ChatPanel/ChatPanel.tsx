@@ -149,6 +149,24 @@ export function ChatPanel({
                 <div className="flex justify-start">
                   <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%]">
                     <p className="text-sm text-gray-800 whitespace-pre-wrap">{qa.answer}</p>
+                    {/* 推荐问题 */}
+                    {qa.suggestedQuestions && qa.suggestedQuestions.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 mb-2">继续探索：</p>
+                        <div className="flex flex-wrap gap-1">
+                          {qa.suggestedQuestions.slice(0, 3).map((sq, i) => (
+                            <button
+                              key={i}
+                              onClick={() => onAskQuestion(sq)}
+                              disabled={isLoading}
+                              className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-full border border-blue-200 disabled:opacity-50"
+                            >
+                              {sq.length > 25 ? sq.slice(0, 25) + '...' : sq}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
