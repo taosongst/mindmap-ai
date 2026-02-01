@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用户（预留，MVP阶段暂不启用）
+model User {
+  id        String    @id @default(uuid())
+  email     String?   @unique
+  name      String?
+  maps      MindMap[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// 思维导图
+model MindMap {
+  id             String          @id @default(uuid())
+  title          String
+  ownerId        String?
+  owner          User?           @relation(fields: [ownerId], references: [id])
+  forkedFromId   String?
+  forkedFrom     MindMap?        @relation("MapForks", fields: [forkedFromId], references: [id])
+  forks          MindMap[]       @relation("MapForks")
+  qas            QA[]
+  nodes          Node[]
+  potentialNodes PotentialNode[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+// 问答记录（逻辑层，不可删除）
+model QA {
+  id                 String   @id @default(uuid())
+  mapId              String
+  map                MindMap  @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  question           String
+  answer             String
+  suggestedQuestions String   @default("[]") // JSON array
+  timestamp          Int // 对话中的顺序
+  source             String   @default("user") // 'user' | 'ai_suggestion' | 'forked_author'
+  sourceAuthorId     String?
+  createdAt          DateTime @default(now())
+
+  // 被节点引用
+  nodeQAs NodeQA[]
+}
+
+// 节点（展示层）
+model Node {
+  id           String  @id @default(uuid())
+  mapId        String
+  map          MindMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  parentNodeId String?
+  parentNode   Node?   @relation("NodeChildren", fields: [parentNodeId], references: [id])
+  children     Node[]  @relation("NodeChildren")
+  positionX    Float?
+  positionY    Float?
+  isHidden     Boolean @default(false)
+  order        Int     @default(0)
+
+  // 引用的问答
+  nodeQAs        NodeQA[]
+  potentialNodes PotentialNode[]
+}
+
+// 节点与问答的多对多关系（支持合并）
+model NodeQA {
+  id     String @id @default(uuid())
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  qaId   String
+  qa     QA     @relation(fields: [qaId], references: [id], onDelete: Cascade)
+  order  Int    @default(0) // 合并时的顺序
+
+  @@unique([nodeId, qaId])
+}
+
+// 潜在节点（AI推荐/原作者路径）
+model PotentialNode {
+  id             String  @id @default(uuid())
+  mapId          String
+  map            MindMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  parentNodeId   String
+  parentNode     Node    @relation(fields: [parentNodeId], references: [id], onDelete: Cascade)
+  question       String
+  source         String  @default("ai") // 'ai' | 'forked_author'
+  sourceAuthorId String?
+  linkedQaId     String? // Fork场景：点击后直接展示此QA
+}
