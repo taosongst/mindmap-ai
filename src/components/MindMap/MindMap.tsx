@@ -16,7 +16,6 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 
 import { QANode } from './QANode'
-import { PotentialNode } from './PotentialNode'
 import { NodeDetail } from './NodeDetail'
 import { useMapStore } from '@/hooks/useMapStore'
 import { calculateNodePosition } from '@/lib/utils'
@@ -24,7 +23,6 @@ import { NodeData, PotentialNodeData } from '@/types'
 
 const nodeTypes: NodeTypes = {
   qaNode: QANode,
-  potentialNode: PotentialNode,
 }
 
 interface MindMapProps {
@@ -35,10 +33,29 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
   const {
     nodes: storeNodes,
     potentialNodes,
+    usedPotentialIds,
     selectedNodeId,
     selectNode,
     hideNode,
+    markPotentialAsUsed,
   } = useMapStore()
+
+  // 处理潜在节点点击
+  const handlePotentialClick = useCallback(
+    (data: PotentialNodeData) => {
+      markPotentialAsUsed(data.id)
+      onAskQuestion(data.question, data.parentNodeId)
+    },
+    [markPotentialAsUsed, onAskQuestion]
+  )
+
+  // 获取指定节点的潜在子节点
+  const getPotentialNodesForNode = useCallback(
+    (nodeId: string) => {
+      return potentialNodes.filter((p) => p.parentNodeId === nodeId)
+    },
+    [potentialNodes]
+  )
 
   // 转换节点数据为ReactFlow格式
   const { flowNodes, flowEdges } = useMemo(() => {
@@ -72,6 +89,9 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
 
       nodePositions.set(node.id, position)
 
+      // 获取该节点的潜在子节点
+      const nodePotentials = getPotentialNodesForNode(node.id)
+
       flowNodes.push({
         id: node.id,
         type: 'qaNode',
@@ -80,6 +100,9 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
           nodeData: node,
           isSelected: selectedNodeId === node.id,
           onSelect: selectNode,
+          potentialNodes: nodePotentials,
+          usedPotentialIds,
+          onPotentialClick: handlePotentialClick,
         },
       })
 
@@ -102,44 +125,8 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     const rootNodes = childrenMap.get(null) || []
     rootNodes.forEach((node, i) => processNode(node, 0, i))
 
-    // 添加潜在节点
-    potentialNodes.forEach((pNode, index) => {
-      const parentPos = nodePositions.get(pNode.parentNodeId)
-      if (!parentPos) return
-
-      // 获取该父节点下已有的子节点数量
-      const existingChildren =
-        (childrenMap.get(pNode.parentNodeId) || []).length + index
-
-      const position = calculateNodePosition(
-        parentPos,
-        existingChildren + 1,
-        existingChildren
-      )
-
-      flowNodes.push({
-        id: `potential-${pNode.id}`,
-        type: 'potentialNode',
-        position,
-        data: {
-          potentialData: pNode,
-          onClick: (data: PotentialNodeData) => {
-            onAskQuestion(data.question, data.parentNodeId)
-          },
-        },
-      })
-
-      flowEdges.push({
-        id: `e-${pNode.parentNodeId}-potential-${pNode.id}`,
-        source: pNode.parentNodeId,
-        target: `potential-${pNode.id}`,
-        type: 'smoothstep',
-        style: { strokeDasharray: '5,5', stroke: '#9CA3AF' },
-      })
-    })
-
     return { flowNodes, flowEdges }
-  }, [storeNodes, potentialNodes, selectedNodeId, selectNode, onAskQuestion])
+  }, [storeNodes, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
@@ -158,6 +145,12 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
   const selectedNode = useMemo(() => {
     return storeNodes.find((n) => n.id === selectedNodeId) || null
   }, [storeNodes, selectedNodeId])
+
+  // 获取选中节点的潜在子节点
+  const selectedNodePotentials = useMemo(() => {
+    if (!selectedNodeId) return []
+    return getPotentialNodesForNode(selectedNodeId)
+  }, [selectedNodeId, getPotentialNodesForNode])
 
   const handleHideNode = async (id: string) => {
     hideNode(id)
@@ -191,8 +184,11 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
       {/* 节点详情面板 */}
       <NodeDetail
         node={selectedNode}
+        potentialNodes={selectedNodePotentials}
+        usedPotentialIds={usedPotentialIds}
         onClose={() => selectNode(null)}
         onHide={handleHideNode}
+        onPotentialClick={handlePotentialClick}
       />
     </div>
   )

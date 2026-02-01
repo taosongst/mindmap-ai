@@ -8,6 +8,7 @@ interface MapState {
   nodes: NodeData[]
   potentialNodes: PotentialNodeData[]
   allQAs: QAData[] // 所有问答（包括隐藏的）
+  usedPotentialIds: Set<string> // 已使用的潜在节点ID
 
   // UI状态
   selectedNodeId: string | null
@@ -28,18 +29,21 @@ interface MapState {
   restoreNode: (id: string) => void
   addPotentialNodes: (nodes: PotentialNodeData[]) => void
   removePotentialNode: (id: string) => void
+  markPotentialAsUsed: (id: string) => void
   selectNode: (id: string | null) => void
   setLoading: (loading: boolean) => void
   setAIProvider: (provider: AIProvider) => void
   addQA: (qa: QAData) => void
+  getPotentialNodesForNode: (nodeId: string) => PotentialNodeData[]
 }
 
-export const useMapStore = create<MapState>((set) => ({
+export const useMapStore = create<MapState>((set, get) => ({
   mapId: null,
   title: '',
   nodes: [],
   potentialNodes: [],
   allQAs: [],
+  usedPotentialIds: new Set(),
   selectedNodeId: null,
   isLoading: false,
   aiProvider: 'openai',
@@ -51,6 +55,7 @@ export const useMapStore = create<MapState>((set) => ({
       nodes: data.nodes,
       potentialNodes: data.potentialNodes,
       allQAs: data.qas,
+      usedPotentialIds: new Set(),
     }),
 
   addNode: (node) =>
@@ -87,6 +92,13 @@ export const useMapStore = create<MapState>((set) => ({
       potentialNodes: state.potentialNodes.filter((n) => n.id !== id),
     })),
 
+  markPotentialAsUsed: (id) =>
+    set((state) => {
+      const newSet = new Set(state.usedPotentialIds)
+      newSet.add(id)
+      return { usedPotentialIds: newSet }
+    }),
+
   selectNode: (id) => set({ selectedNodeId: id }),
 
   setLoading: (loading) => set({ isLoading: loading }),
@@ -97,4 +109,9 @@ export const useMapStore = create<MapState>((set) => ({
     set((state) => ({
       allQAs: [...state.allQAs, qa],
     })),
+
+  getPotentialNodesForNode: (nodeId) => {
+    const state = get()
+    return state.potentialNodes.filter((p) => p.parentNodeId === nodeId)
+  },
 }))
