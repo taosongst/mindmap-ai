@@ -12,6 +12,10 @@ export default function MapPage() {
   const mapId = params.id as string
   const [error, setError] = useState<string | null>(null)
 
+  // 面板折叠状态
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
+
   const {
     setMapData,
     addNode,
@@ -60,6 +64,9 @@ export default function MapPage() {
     async (question: string, parentNodeId?: string) => {
       setError(null)
       startStreaming(question, parentNodeId)
+
+      // 展开右侧面板
+      setRightPanelCollapsed(false)
 
       try {
         const response = await fetch('/api/chat', {
@@ -174,23 +181,56 @@ export default function MapPage() {
 
       {/* 主体区域 - 三栏布局 */}
       <div className="flex-1 flex overflow-hidden">
-        {/* 左侧栏：问答目录 + MiniMap */}
-        <div className="w-[280px] flex flex-col border-r border-gray-200 bg-white flex-shrink-0">
-          {/* 问答目录 */}
-          <div className="flex-1 overflow-hidden">
-            <QADirectory />
+        {/* 左侧栏：问答目录 + 缩略图 */}
+        {leftPanelCollapsed ? (
+          // 折叠状态
+          <div className="w-10 flex flex-col items-center border-r border-gray-200 bg-white flex-shrink-0">
+            <button
+              onClick={() => setLeftPanelCollapsed(false)}
+              className="mt-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+              title="展开侧栏"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div className="mt-4 text-xs text-gray-400" style={{ writingMode: 'vertical-rl' }}>
+              问答目录
+            </div>
           </div>
+        ) : (
+          // 展开状态
+          <div className="w-[280px] flex flex-col border-r border-gray-200 bg-white flex-shrink-0">
+            {/* 头部带折叠按钮 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="font-medium text-gray-800">问答目录</h3>
+              <button
+                onClick={() => setLeftPanelCollapsed(true)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                title="收起侧栏"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </div>
 
-          {/* MiniMap 区域 */}
-          <div className="h-[180px] border-t border-gray-200 bg-gray-50 relative">
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-              <div className="text-center">
-                <div className="text-2xl mb-1">🗺️</div>
-                <div>缩略图</div>
+            {/* 问答目录 */}
+            <div className="flex-1 overflow-hidden">
+              <QADirectory />
+            </div>
+
+            {/* MiniMap 区域 */}
+            <div className="h-[160px] border-t border-gray-200 bg-gray-50 relative">
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🗺️</div>
+                  <div>缩略图</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* 中间：思维导图 */}
         <div className="flex-1 overflow-hidden">
@@ -201,6 +241,8 @@ export default function MapPage() {
         <ChatPanel
           selectedNode={selectedNode}
           onAskQuestion={handleAskQuestion}
+          isCollapsed={rightPanelCollapsed}
+          onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
         />
       </div>
 
