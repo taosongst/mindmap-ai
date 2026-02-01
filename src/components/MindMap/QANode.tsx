@@ -8,7 +8,7 @@ import { NodeData, PotentialNodeData } from '@/types'
 interface QANodeData {
   nodeData: NodeData
   isSelected: boolean
-  onSelect: (id: string) => void
+  onSelect: (id: string | null) => void
   potentialNodes: PotentialNodeData[]
   usedPotentialIds: Set<string>
   onPotentialClick: (data: PotentialNodeData) => void
@@ -32,7 +32,7 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
           transition-all duration-200
           ${isSelected ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:border-blue-300'}
         `}
-        onClick={() => onSelect(id)}
+        onClick={() => onSelect(isSelected ? null : id)}
       >
         <Handle type="target" position={Position.Top} className="!bg-gray-400" />
 

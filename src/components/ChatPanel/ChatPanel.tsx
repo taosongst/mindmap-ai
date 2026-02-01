@@ -37,10 +37,14 @@ export function ChatPanel({
     markPotentialAsUsed,
   } = useMapStore()
 
-  // 当选中节点变化时，自动切换到节点模式
+  // 当选中节点变化时，自动切换标签
   useEffect(() => {
     if (selectedNode && selectedNode.id !== prevSelectedNodeId.current) {
+      // 选中新节点 -> 切换到节点模式
       setActiveTab('node')
+    } else if (!selectedNode && prevSelectedNodeId.current) {
+      // 取消选中 -> 切换回对话模式
+      setActiveTab('chat')
     }
     prevSelectedNodeId.current = selectedNode?.id || null
   }, [selectedNode])
