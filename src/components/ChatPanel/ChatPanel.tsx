@@ -56,10 +56,12 @@ export function ChatPanel({
     }
   }, [isStreaming])
 
-  // 自动滚动到底部
+  // 自动定位到底部（无动画）
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [streamingAnswer, allQAs])
+    if (activeTab === 'chat') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+    }
+  }, [streamingAnswer, allQAs, activeTab, isStreaming])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
