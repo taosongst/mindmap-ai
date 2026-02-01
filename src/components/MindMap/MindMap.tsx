@@ -10,7 +10,6 @@ import ReactFlow, {
   Connection,
   Background,
   Controls,
-  MiniMap,
   NodeTypes,
   NodeDragHandler,
 } from 'reactflow'
@@ -320,7 +319,6 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
       >
         <Background color="#f0f0f0" gap={16} />
         <Controls />
-        <MiniMap />
       </ReactFlow>
 
       {/* 节点详情面板 */}

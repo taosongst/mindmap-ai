@@ -16,6 +16,12 @@ interface MapState {
   isLoading: boolean
   aiProvider: AIProvider
 
+  // 流式响应状态
+  isStreaming: boolean
+  currentQuestion: string
+  streamingAnswer: string
+  streamingParentNodeId: string | null
+
   // Actions
   setMapData: (data: {
     id: string
@@ -40,6 +46,10 @@ interface MapState {
   // 边操作
   addEdge: (edge: EdgeData) => void
   removeEdge: (id: string) => void
+  // 流式响应操作
+  startStreaming: (question: string, parentNodeId?: string) => void
+  appendStreamingAnswer: (chunk: string) => void
+  finishStreaming: () => void
 }
 
 export const useMapStore = create<MapState>((set, get) => ({
@@ -53,6 +63,10 @@ export const useMapStore = create<MapState>((set, get) => ({
   selectedNodeId: null,
   isLoading: false,
   aiProvider: 'openai',
+  isStreaming: false,
+  currentQuestion: '',
+  streamingAnswer: '',
+  streamingParentNodeId: null,
 
   setMapData: (data) =>
     set({
@@ -131,4 +145,27 @@ export const useMapStore = create<MapState>((set, get) => ({
     set((state) => ({
       edges: state.edges.filter((e) => e.id !== id),
     })),
+
+  startStreaming: (question, parentNodeId) =>
+    set({
+      isStreaming: true,
+      currentQuestion: question,
+      streamingAnswer: '',
+      streamingParentNodeId: parentNodeId || null,
+      isLoading: true,
+    }),
+
+  appendStreamingAnswer: (chunk) =>
+    set((state) => ({
+      streamingAnswer: state.streamingAnswer + chunk,
+    })),
+
+  finishStreaming: () =>
+    set({
+      isStreaming: false,
+      currentQuestion: '',
+      streamingAnswer: '',
+      streamingParentNodeId: null,
+      isLoading: false,
+    }),
 }))

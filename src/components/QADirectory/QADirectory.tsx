@@ -3,15 +3,9 @@
 import { useMapStore } from '@/hooks/useMapStore'
 import { truncateText } from '@/lib/utils'
 
-interface QADirectoryProps {
-  isOpen: boolean
-  onClose: () => void
-}
-
-export function QADirectory({ isOpen, onClose }: QADirectoryProps) {
+// 改为常驻左侧面板，无需 isOpen/onClose
+export function QADirectory() {
   const { allQAs, nodes, restoreNode } = useMapStore()
-
-  if (!isOpen) return null
 
   // 创建问答到节点的映射
   const qaToNodeMap = new Map<string, { nodeId: string; isHidden: boolean }>()
@@ -36,22 +30,16 @@ export function QADirectory({ isOpen, onClose }: QADirectoryProps) {
   }
 
   return (
-    <div className="fixed left-0 top-0 h-full w-[320px] bg-white shadow-xl border-r border-gray-200 z-50 flex flex-col">
+    <div className="flex flex-col h-full">
       {/* 头部 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+      <div className="flex items-center px-4 py-3 border-b border-gray-200">
         <h3 className="font-medium text-gray-800">问答目录</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-xl"
-        >
-          ×
-        </button>
       </div>
 
       {/* 问答列表 */}
       <div className="flex-1 overflow-y-auto">
         {allQAs.length === 0 ? (
-          <div className="p-4 text-center text-gray-400">暂无问答记录</div>
+          <div className="p-4 text-center text-gray-400 text-sm">暂无问答记录</div>
         ) : (
           <div className="divide-y divide-gray-100">
             {allQAs.map((qa, index) => {
@@ -63,7 +51,7 @@ export function QADirectory({ isOpen, onClose }: QADirectoryProps) {
                   key={qa.id}
                   className={`p-3 ${isHidden ? 'bg-gray-50' : ''}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2">
                     {/* 序号 */}
                     <span className="text-xs text-gray-400 mt-0.5">
                       {index + 1}.
@@ -74,13 +62,13 @@ export function QADirectory({ isOpen, onClose }: QADirectoryProps) {
                       <div
                         className={`text-sm ${isHidden ? 'text-gray-400' : 'text-gray-700'}`}
                       >
-                        {truncateText(qa.question, 50)}
+                        {truncateText(qa.question, 40)}
                       </div>
 
                       {/* 来源标识 */}
                       {qa.source !== 'user' && (
                         <div className="text-xs text-purple-400 mt-1">
-                          {qa.source === 'ai_suggestion' ? '来自AI推荐' : '来自原作者'}
+                          {qa.source === 'ai_suggestion' ? 'AI推荐' : '原作者'}
                         </div>
                       )}
                     </div>
@@ -95,7 +83,7 @@ export function QADirectory({ isOpen, onClose }: QADirectoryProps) {
                           恢复
                         </button>
                       ) : (
-                        <span className="text-xs text-green-500">展示中</span>
+                        <span className="text-xs text-green-500">显示</span>
                       )}
                     </div>
                   </div>
