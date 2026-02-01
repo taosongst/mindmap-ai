@@ -42,6 +42,23 @@ export interface PotentialNodeData {
   linkedQaId?: string
 }
 
+// 用户自定义边
+export interface EdgeStyle {
+  color?: string
+  strokeWidth?: number
+}
+
+export interface EdgeData {
+  id: string
+  mapId: string
+  sourceNodeId: string
+  targetNodeId: string
+  edgeType: string
+  label?: string
+  style?: EdgeStyle
+  isUserCreated: boolean
+}
+
 // ReactFlow 节点类型
 export interface MindMapNode {
   id: string

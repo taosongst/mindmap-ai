@@ -25,6 +25,7 @@ export async function GET(
           },
         },
         potentialNodes: true,
+        edges: true,
       },
     })
 
@@ -53,6 +54,18 @@ export async function GET(
       })),
     }))
 
+    // 转换边数据格式
+    const edgesData = map.edges.map((edge) => ({
+      id: edge.id,
+      mapId: edge.mapId,
+      sourceNodeId: edge.sourceNodeId,
+      targetNodeId: edge.targetNodeId,
+      edgeType: edge.edgeType,
+      label: edge.label,
+      style: edge.style ? JSON.parse(edge.style) : null,
+      isUserCreated: edge.isUserCreated,
+    }))
+
     return NextResponse.json({
       ...map,
       nodes: nodesWithQAs,
@@ -60,6 +73,7 @@ export async function GET(
         ...qa,
         suggestedQuestions: JSON.parse(qa.suggestedQuestions),
       })),
+      edges: edgesData,
     })
   } catch (error) {
     console.error('Failed to fetch map:', error)

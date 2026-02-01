@@ -32,6 +32,7 @@ model MindMap {
   qas            QA[]
   nodes          Node[]
   potentialNodes PotentialNode[]
+  edges          Edge[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -69,6 +70,10 @@ model Node {
   // 引用的问答
   nodeQAs        NodeQA[]
   potentialNodes PotentialNode[]
+
+  // 用户自定义边
+  outgoingEdges Edge[] @relation("EdgeSource")
+  incomingEdges Edge[] @relation("EdgeTarget")
 }
 
 // 节点与问答的多对多关系（支持合并）
@@ -94,4 +99,22 @@ model PotentialNode {
   source         String  @default("ai") // 'ai' | 'forked_author'
   sourceAuthorId String?
   linkedQaId     String? // Fork场景：点击后直接展示此QA
+}
+
+// 用户自定义边（展示层）
+model Edge {
+  id            String   @id @default(uuid())
+  mapId         String
+  map           MindMap  @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  sourceNodeId  String
+  sourceNode    Node     @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNodeId  String
+  targetNode    Node     @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+  edgeType      String   @default("smoothstep")
+  label         String?
+  style         String?  // JSON: { color, strokeWidth, ... }
+  isUserCreated Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@unique([mapId, sourceNodeId, targetNodeId])
 }

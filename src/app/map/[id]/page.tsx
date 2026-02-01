@@ -38,6 +38,7 @@ export default function MapPage() {
           nodes: data.nodes,
           potentialNodes: data.potentialNodes,
           qas: data.qas,
+          edges: data.edges,
         })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load map')

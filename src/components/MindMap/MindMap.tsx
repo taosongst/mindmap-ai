@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useEffect } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -12,6 +12,7 @@ import ReactFlow, {
   Controls,
   MiniMap,
   NodeTypes,
+  NodeDragHandler,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -31,14 +32,25 @@ interface MindMapProps {
 
 export function MindMap({ onAskQuestion }: MindMapProps) {
   const {
+    mapId,
     nodes: storeNodes,
     potentialNodes,
+    edges: storeEdges,
     usedPotentialIds,
     selectedNodeId,
     selectNode,
     hideNode,
     markPotentialAsUsed,
+    updateNode,
+    addEdge: addStoreEdge,
+    removeEdge: removeStoreEdge,
   } = useMapStore()
+
+  // 用于跟踪已知节点ID，检测新增节点
+  const knownNodeIds = useRef<Set<string>>(new Set())
+
+  // 用于跟踪用户拖动的位置（优先级高于store）
+  const userPositions = useRef<Map<string, { x: number; y: number }>>(new Map())
 
   // 处理潜在节点点击
   const handlePotentialClick = useCallback(
@@ -57,7 +69,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     [potentialNodes]
   )
 
-  // 转换节点数据为ReactFlow格式
+  // 转换节点和边数据为ReactFlow格式
   const { flowNodes, flowEdges } = useMemo(() => {
     const flowNodes: Node[] = []
     const flowEdges: Edge[] = []
@@ -82,10 +94,20 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
         : null
       const siblings = childrenMap.get(node.parentNodeId || null) || []
 
-      const position =
-        node.positionX !== null && node.positionY !== null
-          ? { x: node.positionX!, y: node.positionY! }
-          : calculateNodePosition(parentPos || null, siblings.length, index)
+      // 位置优先级：用户拖动 > store保存 > 自动计算
+      let position: { x: number; y: number }
+
+      if (userPositions.current.has(node.id)) {
+        // 用户拖动过的位置
+        position = userPositions.current.get(node.id)!
+      } else if (node.positionX !== null && node.positionX !== undefined &&
+                 node.positionY !== null && node.positionY !== undefined) {
+        // store中保存的位置
+        position = { x: node.positionX, y: node.positionY }
+      } else {
+        // 自动计算位置（仅对新节点）
+        position = calculateNodePosition(parentPos || null, siblings.length, index)
+      }
 
       nodePositions.set(node.id, position)
 
@@ -106,7 +128,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
         },
       })
 
-      // 创建边
+      // 创建系统边（基于parentNodeId）
       if (node.parentNodeId) {
         flowEdges.push({
           id: `e-${node.parentNodeId}-${node.id}`,
@@ -125,21 +147,140 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     const rootNodes = childrenMap.get(null) || []
     rootNodes.forEach((node, i) => processNode(node, 0, i))
 
+    // 添加用户自定义边（从store）
+    storeEdges.forEach((edge) => {
+      flowEdges.push({
+        id: edge.id,
+        source: edge.sourceNodeId,
+        target: edge.targetNodeId,
+        type: edge.edgeType || 'smoothstep',
+        label: edge.label,
+        style: edge.style ? {
+          stroke: edge.style.color,
+          strokeWidth: edge.style.strokeWidth,
+        } : undefined,
+      })
+    })
+
     return { flowNodes, flowEdges }
-  }, [storeNodes, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick])
+  }, [storeNodes, storeEdges, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges)
 
-  // 同步store变化到ReactFlow
-  useMemo(() => {
-    setNodes(flowNodes)
-    setEdges(flowEdges)
-  }, [flowNodes, flowEdges, setNodes, setEdges])
+  // 智能同步：只更新变化的部分，保持用户拖动的位置
+  useEffect(() => {
+    const currentNodeIds = new Set(storeNodes.filter(n => !n.isHidden).map(n => n.id))
 
+    // 检测新增的节点
+    const newNodeIds = new Set<string>()
+    currentNodeIds.forEach(id => {
+      if (!knownNodeIds.current.has(id)) {
+        newNodeIds.add(id)
+      }
+    })
+
+    // 更新已知节点集合
+    knownNodeIds.current = currentNodeIds
+
+    setNodes(currentNodes => {
+      const currentNodeMap = new Map(currentNodes.map(n => [n.id, n]))
+
+      return flowNodes.map(flowNode => {
+        const existingNode = currentNodeMap.get(flowNode.id)
+
+        if (existingNode && !newNodeIds.has(flowNode.id)) {
+          // 已存在的节点：保持当前位置，只更新data
+          return {
+            ...existingNode,
+            data: flowNode.data,
+          }
+        } else {
+          // 新节点：使用计算的位置
+          return flowNode
+        }
+      })
+    })
+
+    // 直接使用flowEdges（包含系统边和store中的用户边）
+    setEdges(flowEdges)
+  }, [flowNodes, flowEdges, storeNodes, setNodes, setEdges])
+
+  // 处理新建连接
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    async (params: Connection) => {
+      if (!mapId || !params.source || !params.target) return
+
+      const edgeId = `user-${params.source}-${params.target}`
+
+      // 检查是否已存在
+      const existingEdge = storeEdges.find(
+        e => e.sourceNodeId === params.source && e.targetNodeId === params.target
+      )
+      if (existingEdge) return
+
+      const newEdge = {
+        id: edgeId,
+        mapId,
+        sourceNodeId: params.source,
+        targetNodeId: params.target,
+        edgeType: 'smoothstep',
+        isUserCreated: true,
+      }
+
+      // 立即更新UI
+      setEdges((eds) => addEdge({ ...params, id: edgeId, type: 'smoothstep' }, eds))
+
+      // 保存到store
+      addStoreEdge(newEdge)
+
+      // 同步到后端
+      try {
+        const response = await fetch('/api/edges', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newEdge),
+        })
+
+        if (response.ok) {
+          const savedEdge = await response.json()
+          // 用后端返回的ID更新（如果不同）
+          if (savedEdge.id !== edgeId) {
+            removeStoreEdge(edgeId)
+            addStoreEdge(savedEdge)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to save edge:', error)
+      }
+    },
+    [mapId, storeEdges, setEdges, addStoreEdge, removeStoreEdge]
+  )
+
+  // 处理节点拖动结束：保存位置
+  const onNodeDragStop: NodeDragHandler = useCallback(
+    async (event, node) => {
+      // 保存到本地缓存
+      userPositions.current.set(node.id, node.position)
+
+      // 更新store
+      updateNode(node.id, {
+        positionX: node.position.x,
+        positionY: node.position.y,
+      })
+
+      // 同步到后端
+      await fetch('/api/nodes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: node.id,
+          positionX: node.position.x,
+          positionY: node.position.y,
+        }),
+      })
+    },
+    [updateNode]
   )
 
   const selectedNode = useMemo(() => {
@@ -172,6 +313,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
