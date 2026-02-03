@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImportDialog } from '@/components/ImportDialog'
 
 interface MapSummary {
   id: string
@@ -19,6 +20,7 @@ export default function Home() {
   const [maps, setMaps] = useState<MapSummary[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [newTitle, setNewTitle] = useState('')
+  const [isImportOpen, setIsImportOpen] = useState(false)
 
   // 加载地图列表
   useEffect(() => {
@@ -120,12 +122,21 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setIsCreating(true)}
-            className="w-full bg-white rounded-lg shadow-sm border border-gray-200 border-dashed p-6 mb-6 text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
-          >
-            + 开始新的探索
-          </button>
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={() => setIsCreating(true)}
+              className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 border-dashed p-6 text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
+            >
+              + 开始新的探索
+            </button>
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-4 text-gray-500 hover:border-green-500 hover:text-green-500 transition-colors flex flex-col items-center justify-center gap-1"
+            >
+              <span className="text-lg">↓</span>
+              <span className="text-sm">导入 ChatGPT</span>
+            </button>
+          </div>
         )}
 
         {/* 地图列表 */}
@@ -165,6 +176,12 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* 导入对话框 */}
+      <ImportDialog
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+      />
     </main>
   )
 }
