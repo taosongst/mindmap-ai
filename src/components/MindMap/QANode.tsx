@@ -12,16 +12,30 @@ interface QANodeData {
   potentialNodes: PotentialNodeData[]
   usedPotentialIds: Set<string>
   onPotentialClick: (data: PotentialNodeData) => void
+  hasChildren: boolean
+  isChildrenCollapsed: boolean
+  onToggleCollapseChildren: (nodeId: string) => void
 }
 
 function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
-  const { nodeData, isSelected, onSelect, potentialNodes, usedPotentialIds, onPotentialClick } = data
+  const {
+    nodeData,
+    isSelected,
+    onSelect,
+    potentialNodes,
+    usedPotentialIds,
+    onPotentialClick,
+    hasChildren,
+    isChildrenCollapsed,
+    onToggleCollapseChildren,
+  } = data
   const primaryQA = nodeData.qas[0]
   const [isExpanded, setIsExpanded] = useState(false)
 
   if (!primaryQA) return null
 
   const hasPotentialNodes = potentialNodes && potentialNodes.length > 0
+  const showCollapseButton = hasChildren
 
   return (
     <div className="relative">
@@ -67,29 +81,55 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
         />
       </div>
 
-      {/* 展开潜在节点的按钮 */}
-      {hasPotentialNodes && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setIsExpanded(!isExpanded)
-          }}
-          className={`
-            absolute -bottom-3 left-1/2 -translate-x-1/2
-            w-6 h-6 rounded-full
-            flex items-center justify-center
-            text-sm font-medium
-            transition-all duration-200
-            z-10
-            ${isExpanded
-              ? 'bg-gray-500 text-white hover:bg-gray-600'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
-            }
-          `}
-          title={isExpanded ? '收起推荐问题' : '展开推荐问题'}
-        >
-          {isExpanded ? '−' : '+'}
-        </button>
+      {/* 底部按钮组 */}
+      {(hasPotentialNodes || showCollapseButton) && (
+        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+          {/* 展开潜在节点的按钮 */}
+          {hasPotentialNodes && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsExpanded(!isExpanded)
+              }}
+              className={`
+                w-6 h-6 rounded-full
+                flex items-center justify-center
+                text-sm font-medium
+                transition-all duration-200
+                ${isExpanded
+                  ? 'bg-gray-500 text-white hover:bg-gray-600'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                }
+              `}
+              title={isExpanded ? '收起推荐问题' : '展开推荐问题'}
+            >
+              {isExpanded ? '−' : '+'}
+            </button>
+          )}
+
+          {/* 折叠/展开子节点的按钮 */}
+          {showCollapseButton && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleCollapseChildren(id)
+              }}
+              className={`
+                w-6 h-6 rounded-full
+                flex items-center justify-center
+                text-xs font-medium
+                transition-all duration-200
+                ${isChildrenCollapsed
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-gray-400 text-white hover:bg-gray-500'
+                }
+              `}
+              title={isChildrenCollapsed ? '展开子节点' : '折叠子节点'}
+            >
+              {isChildrenCollapsed ? '▶' : '▼'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* 潜在节点弹出窗口 */}

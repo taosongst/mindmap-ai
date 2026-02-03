@@ -15,6 +15,7 @@ interface MapState {
   selectedNodeId: string | null
   isLoading: boolean
   aiProvider: AIProvider
+  collapsedNodeIds: Set<string> // 被折叠子节点的父节点ID
 
   // 流式响应状态
   isStreaming: boolean
@@ -50,6 +51,8 @@ interface MapState {
   startStreaming: (question: string, parentNodeId?: string) => void
   appendStreamingAnswer: (chunk: string) => void
   finishStreaming: () => void
+  // 子节点折叠操作
+  toggleCollapseChildren: (nodeId: string) => void
 }
 
 export const useMapStore = create<MapState>((set, get) => ({
@@ -63,26 +66,64 @@ export const useMapStore = create<MapState>((set, get) => ({
   selectedNodeId: null,
   isLoading: false,
   aiProvider: 'openai',
+  collapsedNodeIds: new Set(),
   isStreaming: false,
   currentQuestion: '',
   streamingAnswer: '',
   streamingParentNodeId: null,
 
-  setMapData: (data) =>
+  setMapData: (data) => {
+    // 收集现有 edges 的 target 节点 ID
+    const existingEdgeTargets = new Set(
+      (data.edges || []).map((e) => e.targetNodeId)
+    )
+
+    // 为有 parentNodeId 但没有对应 edge 的节点创建系统边（兼容旧数据）
+    const systemEdges: EdgeData[] = data.nodes
+      .filter((n) => n.parentNodeId && !existingEdgeTargets.has(n.id))
+      .map((n) => ({
+        id: `system-${n.parentNodeId}-${n.id}`,
+        mapId: data.id,
+        sourceNodeId: n.parentNodeId!,
+        targetNodeId: n.id,
+        edgeType: 'smoothstep',
+        isUserCreated: false,
+      }))
+
     set({
       mapId: data.id,
       title: data.title,
       nodes: data.nodes,
       potentialNodes: data.potentialNodes,
       allQAs: data.qas,
-      edges: data.edges || [],
+      edges: [...(data.edges || []), ...systemEdges],
       usedPotentialIds: new Set(),
-    }),
+      collapsedNodeIds: new Set(), // 重置折叠状态
+    })
+  },
 
   addNode: (node) =>
-    set((state) => ({
-      nodes: [...state.nodes, node],
-    })),
+    set((state) => {
+      // 如果节点有父节点，自动创建系统边
+      const newEdges = node.parentNodeId
+        ? [
+            ...state.edges,
+            {
+              id: `system-${node.parentNodeId}-${node.id}`,
+              mapId: state.mapId!,
+              sourceNodeId: node.parentNodeId,
+              targetNodeId: node.id,
+              edgeType: 'smoothstep',
+              isUserCreated: false,
+            },
+          ]
+        : state.edges
+
+      return {
+        nodes: [...state.nodes, node],
+        edges: newEdges,
+      }
+    }),
 
   updateNode: (id, updates) =>
     set((state) => ({
@@ -167,5 +208,16 @@ export const useMapStore = create<MapState>((set, get) => ({
       streamingAnswer: '',
       streamingParentNodeId: null,
       isLoading: false,
+    }),
+
+  toggleCollapseChildren: (nodeId) =>
+    set((state) => {
+      const newSet = new Set(state.collapsedNodeIds)
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId)
+      } else {
+        newSet.add(nodeId)
+      }
+      return { collapsedNodeIds: newSet }
     }),
 }))
