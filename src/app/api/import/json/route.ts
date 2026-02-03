@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import type { Node } from '@prisma/client'
 
 interface ChatGPTMessage {
   id: string
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      const node = await prisma.node.create({
+      const node: Node = await prisma.node.create({
         data: {
           mapId: map.id,
           parentNodeId,

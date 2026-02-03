@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { scrapeChatGPTShare, pairMessagesToQA } from '@/lib/chatgpt-scraper'
+import type { Node } from '@prisma/client'
 
 export const maxDuration = 60 // Vercel Pro 最大超时时间
 
@@ -60,11 +61,12 @@ export async function POST(request: NextRequest) {
     })
 
     // 创建节点链
-    let parentNodeId: string | null = null
-    const createdNodes = []
+    const createdNodes: { nodeId: string; qaId: string; question: string }[] = []
+    let lastNodeId: string | null = null
 
     for (let i = 0; i < qaPairs.length; i++) {
       const pair = qaPairs[i]
+      const currentParentId: string | null = lastNodeId
 
       // 创建 QA 记录
       const qa = await prisma.qA.create({
@@ -79,10 +81,10 @@ export async function POST(request: NextRequest) {
       })
 
       // 创建节点并关联 QA
-      const node = await prisma.node.create({
+      const node: Node = await prisma.node.create({
         data: {
           mapId: map.id,
-          parentNodeId,
+          parentNodeId: currentParentId,
           order: 0,
           nodeQAs: {
             create: {
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
         question: pair.question.slice(0, 50) + (pair.question.length > 50 ? '...' : ''),
       })
 
-      parentNodeId = node.id
+      lastNodeId = node.id
     }
 
     return NextResponse.json({
