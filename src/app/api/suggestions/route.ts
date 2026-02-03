@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { regenerateSuggestions } from '@/lib/ai'
-import { AIProvider } from '@/types'
+import { AIModel } from '@/types'
 
 // 重新生成推荐问题
 export async function POST(request: NextRequest) {
@@ -9,10 +9,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       nodeId,
-      provider = 'openai',
+      model = 'gpt-4o-mini',
     }: {
       nodeId: string
-      provider?: AIProvider
+      model?: AIModel
     } = body
 
     // 获取节点和关联的 QA
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const suggestedQuestions = await regenerateSuggestions(
       primaryQA.question,
       primaryQA.answer,
-      provider,
+      model,
       existingQuestions
     )
 

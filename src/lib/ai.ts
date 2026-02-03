@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
-import { AIProvider, ChatMessage } from '@/types'
+import { AIModel, ChatMessage } from '@/types'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -9,6 +9,23 @@ const openai = new OpenAI({
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 })
+
+// 模型配置映射
+const MODEL_CONFIG: Record<AIModel, { provider: 'openai' | 'anthropic'; modelId: string }> = {
+  'gpt-4o-mini': { provider: 'openai', modelId: 'gpt-4o-mini' },
+  'gpt-4o': { provider: 'openai', modelId: 'gpt-4o' },
+  'gpt-4.1': { provider: 'openai', modelId: 'gpt-4.1' },
+  'gpt-5': { provider: 'openai', modelId: 'gpt-5' },
+  'gpt-5-mini': { provider: 'openai', modelId: 'gpt-5-mini' },
+  'gpt-5.2': { provider: 'openai', modelId: 'gpt-5.2' },
+  'o3-mini': { provider: 'openai', modelId: 'o3-mini' },
+  'claude-sonnet': { provider: 'anthropic', modelId: 'claude-3-5-sonnet-20241022' },
+  'claude-opus': { provider: 'anthropic', modelId: 'claude-3-opus-20240229' },
+}
+
+function getModelConfig(model: AIModel) {
+  return MODEL_CONFIG[model] || MODEL_CONFIG['gpt-4o-mini']
+}
 
 // 非流式模式的 system prompt（要求 JSON 格式）
 const SYSTEM_PROMPT_JSON = `你是一个知识探索助手，帮助用户学习和理解各种主题。
@@ -62,8 +79,9 @@ const SYSTEM_PROMPT_STREAM = `你是一个知识探索助手，帮助用户学�
 // 非流式调用（保持兼容）
 export async function chat(
   messages: ChatMessage[],
-  provider: AIProvider
+  model: AIModel
 ): Promise<{ answer: string; suggestedQuestions: string[] }> {
+  const { provider, modelId } = getModelConfig(model)
   const formattedMessages = messages.map((m) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
@@ -73,7 +91,7 @@ export async function chat(
 
   if (provider === 'openai') {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelId,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT_JSON },
         ...formattedMessages,
@@ -83,7 +101,7 @@ export async function chat(
     responseText = response.choices[0]?.message?.content || ''
   } else {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: modelId,
       max_tokens: 4096,
       system: SYSTEM_PROMPT_JSON,
       messages: formattedMessages,
@@ -117,9 +135,10 @@ export async function chat(
 // 流式调用
 export async function chatStream(
   messages: ChatMessage[],
-  provider: AIProvider,
+  model: AIModel,
   onChunk: (chunk: string) => void
 ): Promise<{ answer: string; suggestedQuestions: string[] }> {
+  const { provider, modelId } = getModelConfig(model)
   const formattedMessages = messages.map((m) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
@@ -129,7 +148,7 @@ export async function chatStream(
 
   if (provider === 'openai') {
     const stream = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelId,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT_STREAM },
         ...formattedMessages,
@@ -146,7 +165,7 @@ export async function chatStream(
     }
   } else {
     const stream = anthropic.messages.stream({
-      model: 'claude-3-5-sonnet-20241022',
+      model: modelId,
       max_tokens: 4096,
       system: SYSTEM_PROMPT_STREAM,
       messages: formattedMessages,
@@ -298,7 +317,7 @@ const SYSTEM_PROMPT_SUGGESTIONS = `你是一个知识探索助手。根据提供
 export async function regenerateSuggestions(
   question: string,
   answer: string,
-  provider: AIProvider,
+  model: AIModel,
   existingQuestions: string[] = []
 ): Promise<string[]> {
   // 最多重试 2 次
@@ -307,7 +326,7 @@ export async function regenerateSuggestions(
       const result = await attemptGenerateSuggestions(
         question,
         answer,
-        provider,
+        model,
         existingQuestions,
         attempt > 0 // 重试时使用更简化的 prompt
       )
@@ -326,10 +345,11 @@ export async function regenerateSuggestions(
 async function attemptGenerateSuggestions(
   question: string,
   answer: string,
-  provider: AIProvider,
+  model: AIModel,
   existingQuestions: string[],
   simplified: boolean
 ): Promise<string[]> {
+  const { provider, modelId } = getModelConfig(model)
   let userMessage: string
 
   if (simplified) {
@@ -349,7 +369,7 @@ async function attemptGenerateSuggestions(
 
   if (provider === 'openai') {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: modelId,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT_SUGGESTIONS },
         { role: 'user', content: userMessage },
@@ -359,7 +379,7 @@ async function attemptGenerateSuggestions(
     responseText = response.choices[0]?.message?.content || '{}'
   } else {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: modelId,
       max_tokens: 1024,
       system: SYSTEM_PROMPT_SUGGESTIONS,
       messages: [{ role: 'user', content: userMessage }],

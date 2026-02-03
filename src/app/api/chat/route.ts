@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { chat, chatStream } from '@/lib/ai'
-import { ChatMessage, AIProvider } from '@/types'
+import { ChatMessage, AIModel } from '@/types'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,12 +10,12 @@ export async function POST(request: NextRequest) {
       mapId,
       parentNodeId,
       question,
-      provider = 'openai',
+      model = 'gpt-4o-mini',
     }: {
       mapId: string
       parentNodeId?: string
       question: string
-      provider?: AIProvider
+      model?: AIModel
     } = body
 
     // 检测是否请求流式响应
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
             // 流式调用 AI，每个 chunk 都发送给客户端
             const { answer, suggestedQuestions } = await chatStream(
               messages,
-              provider,
+              model,
               (chunk) => {
                 // 发送 chunk 给客户端
                 const data = JSON.stringify({ chunk })
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // 非流式响应模式（保持兼容）
-      const { answer, suggestedQuestions } = await chat(messages, provider)
+      const { answer, suggestedQuestions } = await chat(messages, model)
 
       const newTimestamp = map.qas.length
 

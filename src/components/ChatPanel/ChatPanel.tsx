@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect, useRef } from 'react'
 import { useMapStore } from '@/hooks/useMapStore'
-import { NodeData, QAData, PotentialNodeData } from '@/types'
+import { NodeData, QAData, PotentialNodeData, AI_MODELS } from '@/types'
 
 type TabMode = 'chat' | 'node'
 
@@ -33,8 +33,8 @@ export function ChatPanel({
     isStreaming,
     currentQuestion,
     streamingAnswer,
-    aiProvider,
-    setAIProvider,
+    aiModel,
+    setAIModel,
     allQAs,
     potentialNodes,
     usedPotentialIds,
@@ -100,7 +100,7 @@ export function ChatPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nodeId: selectedNode.id,
-          provider: aiProvider,
+          model: aiModel,
         }),
       })
 
@@ -353,17 +353,20 @@ export function ChatPanel({
       {/* 输入区域 - 固定在底部 */}
       <div className="border-t border-gray-200 p-4 bg-white">
         <form onSubmit={handleSubmit} className="space-y-3">
-          {/* AI 选择器 */}
+          {/* AI 模型选择器 */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">AI:</span>
+            <span className="text-xs text-gray-500">模型:</span>
             <select
-              value={aiProvider}
-              onChange={(e) => setAIProvider(e.target.value as 'openai' | 'anthropic')}
+              value={aiModel}
+              onChange={(e) => setAIModel(e.target.value as typeof aiModel)}
               className="px-2 py-1 text-xs border border-gray-200 rounded bg-gray-50 text-gray-600"
               disabled={isLoading}
             >
-              <option value="openai">GPT-4o</option>
-              <option value="anthropic">Claude</option>
+              {AI_MODELS.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name} ({model.description})
+                </option>
+              ))}
             </select>
           </div>
 

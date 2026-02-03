@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react'
 import { useMapStore } from '@/hooks/useMapStore'
+import { AI_MODELS } from '@/types'
 
 interface ChatInputProps {
   onSubmit: (question: string) => void
@@ -15,7 +16,7 @@ export function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [input, setInput] = useState('')
-  const { isLoading, aiProvider, setAIProvider } = useMapStore()
+  const { isLoading, aiModel, setAIModel } = useMapStore()
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -28,17 +29,18 @@ export function ChatInput({
   return (
     <div className="bg-white border-t border-gray-200 p-4">
       <form onSubmit={handleSubmit} className="flex gap-3 items-end">
-        {/* AI 选择器 */}
+        {/* AI 模型选择器 */}
         <select
-          value={aiProvider}
-          onChange={(e) =>
-            setAIProvider(e.target.value as 'openai' | 'anthropic')
-          }
+          value={aiModel}
+          onChange={(e) => setAIModel(e.target.value as typeof aiModel)}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
           disabled={isLoading}
         >
-          <option value="openai">GPT-4o</option>
-          <option value="anthropic">Claude</option>
+          {AI_MODELS.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
         </select>
 
         {/* 输入框 */}

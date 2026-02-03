@@ -32,7 +32,7 @@ export default function MapPage() {
     addPotentialNodes,
     selectedNodeId,
     nodes,
-    aiProvider,
+    aiModel,
     title,
     startStreaming,
     appendStreamingAnswer,
@@ -141,7 +141,7 @@ export default function MapPage() {
             mapId,
             parentNodeId: parentNodeId || selectedNodeId,
             question,
-            provider: aiProvider,
+            model: aiModel,
           }),
         })
 
@@ -217,7 +217,7 @@ export default function MapPage() {
     [
       mapId,
       selectedNodeId,
-      aiProvider,
+      aiModel,
       startStreaming,
       appendStreamingAnswer,
       finishStreaming,

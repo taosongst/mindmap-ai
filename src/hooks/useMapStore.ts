@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { NodeData, PotentialNodeData, QAData, EdgeData, AIProvider } from '@/types'
+import { NodeData, PotentialNodeData, QAData, EdgeData, AIModel } from '@/types'
 
 interface MapState {
   // 地图数据
@@ -14,7 +14,7 @@ interface MapState {
   // UI状态
   selectedNodeId: string | null
   isLoading: boolean
-  aiProvider: AIProvider
+  aiModel: AIModel
   collapsedNodeIds: Set<string> // 被折叠子节点的父节点ID
 
   // 流式响应状态
@@ -42,7 +42,7 @@ interface MapState {
   markPotentialAsUsed: (id: string) => void
   selectNode: (id: string | null) => void
   setLoading: (loading: boolean) => void
-  setAIProvider: (provider: AIProvider) => void
+  setAIModel: (model: AIModel) => void
   addQA: (qa: QAData) => void
   getPotentialNodesForNode: (nodeId: string) => PotentialNodeData[]
   // 边操作
@@ -66,7 +66,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   usedPotentialIds: new Set(),
   selectedNodeId: null,
   isLoading: false,
-  aiProvider: 'openai',
+  aiModel: 'gpt-4o-mini',
   collapsedNodeIds: new Set(),
   isStreaming: false,
   currentQuestion: '',
@@ -177,7 +177,7 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  setAIProvider: (provider) => set({ aiProvider: provider }),
+  setAIModel: (model) => set({ aiModel: model }),
 
   addQA: (qa) =>
     set((state) => ({
