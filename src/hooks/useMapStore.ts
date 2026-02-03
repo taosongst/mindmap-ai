@@ -16,6 +16,7 @@ interface MapState {
   isLoading: boolean
   aiModel: AIModel
   collapsedNodeIds: Set<string> // 被折叠子节点的父节点ID
+  showAnswerPreview: boolean // 是否在节点中显示回答预览
 
   // 流式响应状态
   isStreaming: boolean
@@ -54,6 +55,8 @@ interface MapState {
   finishStreaming: () => void
   // 子节点折叠操作
   toggleCollapseChildren: (nodeId: string) => void
+  // 节点显示设置
+  toggleAnswerPreview: () => void
 }
 
 export const useMapStore = create<MapState>((set, get) => ({
@@ -68,6 +71,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   isLoading: false,
   aiModel: 'gpt-4o-mini',
   collapsedNodeIds: new Set(),
+  showAnswerPreview: true, // 默认显示预览
   isStreaming: false,
   currentQuestion: '',
   streamingAnswer: '',
@@ -232,4 +236,7 @@ export const useMapStore = create<MapState>((set, get) => ({
       }
       return { collapsedNodeIds: newSet }
     }),
+
+  toggleAnswerPreview: () =>
+    set((state) => ({ showAnswerPreview: !state.showAnswerPreview })),
 }))

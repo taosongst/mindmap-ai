@@ -44,6 +44,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     removeEdge: removeStoreEdge,
     collapsedNodeIds,
     toggleCollapseChildren,
+    showAnswerPreview,
   } = useMapStore()
 
   // 用于跟踪已知节点ID，检测新增节点
@@ -173,6 +174,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
           hasChildren: hasChildrenMap.has(node.id),
           isChildrenCollapsed: collapsedNodeIds.has(node.id),
           onToggleCollapseChildren: toggleCollapseChildren,
+          showAnswerPreview,
         },
       })
 
@@ -206,7 +208,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     })
 
     return { flowNodes, flowEdges }
-  }, [storeNodes, storeEdges, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick, collapsedNodeIds, toggleCollapseChildren, isCollapsedByAncestor, parentMap, childrenSet])
+  }, [storeNodes, storeEdges, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick, collapsedNodeIds, toggleCollapseChildren, isCollapsedByAncestor, parentMap, childrenSet, showAnswerPreview])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, defaultOnEdgesChange] = useEdgesState(flowEdges)

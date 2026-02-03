@@ -33,6 +33,8 @@ export default function MapPage() {
     selectedNodeId,
     nodes,
     aiModel,
+    showAnswerPreview,
+    toggleAnswerPreview,
     title,
     startStreaming,
     appendStreamingAnswer,
@@ -238,6 +240,20 @@ export default function MapPage() {
           <h1 className="text-lg font-medium text-gray-800">
             {title || '加载中...'}
           </h1>
+        </div>
+        {/* 显示设置 */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleAnswerPreview}
+            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+              showAnswerPreview
+                ? 'bg-blue-50 border-blue-200 text-blue-600'
+                : 'bg-gray-50 border-gray-200 text-gray-500'
+            }`}
+            title={showAnswerPreview ? '点击隐藏回答预览' : '点击显示回答预览'}
+          >
+            {showAnswerPreview ? '显示预览' : '仅标题'}
+          </button>
         </div>
       </header>
 

@@ -15,6 +15,7 @@ interface QANodeData {
   hasChildren: boolean
   isChildrenCollapsed: boolean
   onToggleCollapseChildren: (nodeId: string) => void
+  showAnswerPreview: boolean
 }
 
 function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
@@ -28,6 +29,7 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
     hasChildren,
     isChildrenCollapsed,
     onToggleCollapseChildren,
+    showAnswerPreview,
   } = data
   const primaryQA = nodeData.qas[0]
   const [isExpanded, setIsExpanded] = useState(false)
@@ -51,14 +53,16 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
         <Handle type="target" position={Position.Top} className="!bg-gray-400" />
 
         {/* 问题 */}
-        <div className="text-sm font-medium text-gray-800 mb-2">
+        <div className={`text-sm font-medium text-gray-800 ${showAnswerPreview ? 'mb-2' : ''}`}>
           {truncateText(primaryQA.question, 60)}
         </div>
 
-        {/* 回答预览 */}
-        <div className="text-xs text-gray-500 line-clamp-2">
-          {truncateText(primaryQA.answer, 100)}
-        </div>
+        {/* 回答预览（可选） */}
+        {showAnswerPreview && (
+          <div className="text-xs text-gray-500 line-clamp-2">
+            {truncateText(primaryQA.answer, 100)}
+          </div>
+        )}
 
         {/* 合并指示器 */}
         {nodeData.qas.length > 1 && (
