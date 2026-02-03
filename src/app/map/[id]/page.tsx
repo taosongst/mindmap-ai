@@ -258,7 +258,7 @@ export default function MapPage() {
       </header>
 
       {/* 主体区域 - 三栏布局 */}
-      <div ref={containerRef} className="flex-1 flex overflow-hidden">
+      <div ref={containerRef} className="flex-1 flex overflow-hidden min-h-0">
         {/* 左侧栏：问答目录 + 缩略图 */}
         {leftPanelCollapsed ? (
           // 折叠状态

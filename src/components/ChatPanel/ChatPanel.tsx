@@ -24,7 +24,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [activeTab, setActiveTab] = useState<TabMode>('chat')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const prevSelectedNodeId = useRef<string | null>(null)
 
   const [isRegenerating, setIsRegenerating] = useState(false)
@@ -62,10 +62,10 @@ export function ChatPanel({
     }
   }, [isStreaming])
 
-  // 自动定位到底部（无动画）
+  // 自动定位到底部（无动画）- 使用 scrollTop 避免滚动整个页面
   useEffect(() => {
-    if (activeTab === 'chat') {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+    if (activeTab === 'chat' && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
     }
   }, [streamingAnswer, allQAs, activeTab, isStreaming])
 
@@ -135,7 +135,7 @@ export function ChatPanel({
   }
 
   return (
-    <div style={{ width: width || 380 }} className="flex flex-col bg-white h-full flex-shrink-0">
+    <div style={{ width: width || 380 }} className="flex flex-col bg-white h-full flex-shrink-0 min-h-0">
       {/* 头部：标签切换 + 折叠按钮 */}
       <div className="flex items-center justify-between border-b border-gray-200 px-2">
         <div className="flex">
@@ -172,7 +172,7 @@ export function ChatPanel({
       </div>
 
       {/* 内容区域 */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
         {activeTab === 'chat' ? (
           // ========== 对话模式 ==========
           <div className="p-4 space-y-4">
@@ -247,7 +247,6 @@ export function ChatPanel({
               </div>
             )}
 
-            <div ref={messagesEndRef} />
           </div>
         ) : (
           // ========== 节点模式 ==========
