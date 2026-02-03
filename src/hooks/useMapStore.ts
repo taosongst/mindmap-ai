@@ -38,6 +38,7 @@ interface MapState {
   restoreNode: (id: string) => void
   addPotentialNodes: (nodes: PotentialNodeData[]) => void
   removePotentialNode: (id: string) => void
+  replacePotentialNodes: (parentNodeId: string, nodes: PotentialNodeData[]) => void
   markPotentialAsUsed: (id: string) => void
   selectNode: (id: string | null) => void
   setLoading: (loading: boolean) => void
@@ -152,6 +153,17 @@ export const useMapStore = create<MapState>((set, get) => ({
   removePotentialNode: (id) =>
     set((state) => ({
       potentialNodes: state.potentialNodes.filter((n) => n.id !== id),
+    })),
+
+  replacePotentialNodes: (parentNodeId, nodes) =>
+    set((state) => ({
+      // 移除该父节点下所有 AI 来源的潜在节点，然后添加新的
+      potentialNodes: [
+        ...state.potentialNodes.filter(
+          (n) => !(n.parentNodeId === parentNodeId && n.source === 'ai')
+        ),
+        ...nodes,
+      ],
     })),
 
   markPotentialAsUsed: (id) =>

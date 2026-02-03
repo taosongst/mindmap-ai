@@ -26,6 +26,8 @@ export function ChatPanel({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const prevSelectedNodeId = useRef<string | null>(null)
 
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
   const {
     isLoading,
     isStreaming,
@@ -37,6 +39,7 @@ export function ChatPanel({
     potentialNodes,
     usedPotentialIds,
     markPotentialAsUsed,
+    replacePotentialNodes,
   } = useMapStore()
 
   // 当选中节点变化时，自动切换标签
@@ -84,6 +87,32 @@ export function ChatPanel({
   const handlePotentialClick = (potential: PotentialNodeData) => {
     markPotentialAsUsed(potential.id)
     onAskQuestion(potential.question, potential.parentNodeId)
+  }
+
+  // 重新生成推荐问题
+  const handleRegenerateSuggestions = async () => {
+    if (!selectedNode || isRegenerating) return
+
+    setIsRegenerating(true)
+    try {
+      const response = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId: selectedNode.id,
+          provider: aiProvider,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        replacePotentialNodes(selectedNode.id, data.potentialNodes)
+      }
+    } catch (error) {
+      console.error('Failed to regenerate suggestions:', error)
+    } finally {
+      setIsRegenerating(false)
+    }
   }
 
   // 折叠状态下只显示一个收缩按钮
@@ -230,6 +259,42 @@ export function ChatPanel({
                     </div>
                   ))}
                 </div>
+
+                {/* 重新生成推荐问题按钮 */}
+                <button
+                  onClick={handleRegenerateSuggestions}
+                  disabled={isRegenerating || isLoading}
+                  className="w-full py-2 px-4 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {isRegenerating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      重新生成推荐问题
+                    </>
+                  )}
+                </button>
 
                 {/* 潜在子节点（AI推荐的后续问题） */}
                 {nodePotentials.length > 0 && (

@@ -195,3 +195,61 @@ function parseStreamResponse(response: string): { answer: string; suggestedQuest
   // 没有找到分隔符，返回整个响应作为答案
   return { answer: response.trim(), suggestedQuestions: [] }
 }
+
+// 重新生成推荐问题
+const SYSTEM_PROMPT_SUGGESTIONS = `你是一个知识探索助手。根据提供的问答内容，生成3-5个相关的后续问题供用户继续探索。
+
+要求：
+1. 问题应该与原问答内容相关，帮助用户深入或扩展理解
+2. 问题应该多样化，覆盖不同的探索方向
+3. 问题应该简洁明了
+
+请直接返回一个JSON数组，不要有其他内容：
+["问题1", "问题2", "问题3", "问题4", "问题5"]`
+
+export async function regenerateSuggestions(
+  question: string,
+  answer: string,
+  provider: AIProvider
+): Promise<string[]> {
+  const userMessage = `原问题：${question}\n\n原回答：${answer}\n\n请为这个问答生成新的后续探索问题。`
+
+  let responseText: string
+
+  if (provider === 'openai') {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT_SUGGESTIONS },
+        { role: 'user', content: userMessage },
+      ],
+      response_format: { type: 'json_object' },
+    })
+    responseText = response.choices[0]?.message?.content || '[]'
+  } else {
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT_SUGGESTIONS,
+      messages: [{ role: 'user', content: userMessage }],
+    })
+    const textBlock = response.content.find((block) => block.type === 'text')
+    responseText = textBlock?.type === 'text' ? textBlock.text : '[]'
+  }
+
+  try {
+    // 尝试解析 JSON
+    let jsonStr = responseText
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0]
+    }
+    const parsed = JSON.parse(jsonStr)
+    if (Array.isArray(parsed)) {
+      return parsed.filter((q) => typeof q === 'string')
+    }
+    return []
+  } catch {
+    return []
+  }
+}
