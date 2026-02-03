@@ -16,7 +16,6 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 
 import { QANode } from './QANode'
-import { NodeDetail } from './NodeDetail'
 import { useMapStore } from '@/hooks/useMapStore'
 import { calculateNodePosition } from '@/lib/utils'
 import { NodeData, PotentialNodeData } from '@/types'
@@ -282,16 +281,6 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     [updateNode]
   )
 
-  const selectedNode = useMemo(() => {
-    return storeNodes.find((n) => n.id === selectedNodeId) || null
-  }, [storeNodes, selectedNodeId])
-
-  // 获取选中节点的潜在子节点
-  const selectedNodePotentials = useMemo(() => {
-    if (!selectedNodeId) return []
-    return getPotentialNodesForNode(selectedNodeId)
-  }, [selectedNodeId, getPotentialNodesForNode])
-
   const handleHideNode = async (id: string) => {
     hideNode(id)
     selectNode(null)
@@ -320,16 +309,6 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
         <Background color="#f0f0f0" gap={16} />
         <Controls />
       </ReactFlow>
-
-      {/* 节点详情面板 */}
-      <NodeDetail
-        node={selectedNode}
-        potentialNodes={selectedNodePotentials}
-        usedPotentialIds={usedPotentialIds}
-        onClose={() => selectNode(null)}
-        onHide={handleHideNode}
-        onPotentialClick={handlePotentialClick}
-      />
     </div>
   )
 }

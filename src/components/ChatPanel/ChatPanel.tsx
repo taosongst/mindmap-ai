@@ -11,6 +11,7 @@ interface ChatPanelProps {
   onAskQuestion: (question: string, parentNodeId?: string) => void
   isCollapsed: boolean
   onToggleCollapse: () => void
+  width?: number
 }
 
 export function ChatPanel({
@@ -18,6 +19,7 @@ export function ChatPanel({
   onAskQuestion,
   isCollapsed,
   onToggleCollapse,
+  width,
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [activeTab, setActiveTab] = useState<TabMode>('chat')
@@ -101,7 +103,7 @@ export function ChatPanel({
   }
 
   return (
-    <div className="w-[380px] flex flex-col border-l border-gray-200 bg-white h-full">
+    <div style={{ width: width || 380 }} className="flex flex-col bg-white h-full flex-shrink-0">
       {/* 头部：标签切换 + 折叠按钮 */}
       <div className="flex items-center justify-between border-b border-gray-200 px-2">
         <div className="flex">

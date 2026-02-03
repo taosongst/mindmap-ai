@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { MindMap } from '@/components/MindMap/MindMap'
 import { ChatPanel } from '@/components/ChatPanel/ChatPanel'
@@ -16,6 +16,15 @@ export default function MapPage() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
 
+  // 面板宽度状态
+  const [leftPanelWidth, setLeftPanelWidth] = useState(280)
+  const [rightPanelWidth, setRightPanelWidth] = useState(380)
+
+  // 拖拽状态
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false)
+  const [isDraggingRight, setIsDraggingRight] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const {
     setMapData,
     addNode,
@@ -29,6 +38,59 @@ export default function MapPage() {
     appendStreamingAnswer,
     finishStreaming,
   } = useMapStore()
+
+  // 处理左侧面板拖拽
+  const handleLeftMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDraggingLeft(true)
+  }, [])
+
+  // 处理右侧面板拖拽
+  const handleRightMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDraggingRight(true)
+  }, [])
+
+  // 处理鼠标移动和释放
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return
+
+      const containerRect = containerRef.current.getBoundingClientRect()
+
+      if (isDraggingLeft) {
+        const newWidth = e.clientX - containerRect.left
+        // 限制最小和最大宽度
+        setLeftPanelWidth(Math.max(200, Math.min(500, newWidth)))
+      }
+
+      if (isDraggingRight) {
+        const newWidth = containerRect.right - e.clientX
+        // 限制最小和最大宽度
+        setRightPanelWidth(Math.max(280, Math.min(600, newWidth)))
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsDraggingLeft(false)
+      setIsDraggingRight(false)
+    }
+
+    if (isDraggingLeft || isDraggingRight) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      // 防止文本选择
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'col-resize'
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+  }, [isDraggingLeft, isDraggingRight])
 
   // 加载地图数据
   useEffect(() => {
@@ -180,7 +242,7 @@ export default function MapPage() {
       </header>
 
       {/* 主体区域 - 三栏布局 */}
-      <div className="flex-1 flex overflow-hidden">
+      <div ref={containerRef} className="flex-1 flex overflow-hidden">
         {/* 左侧栏：问答目录 + 缩略图 */}
         {leftPanelCollapsed ? (
           // 折叠状态
@@ -200,36 +262,48 @@ export default function MapPage() {
           </div>
         ) : (
           // 展开状态
-          <div className="w-[280px] flex flex-col border-r border-gray-200 bg-white flex-shrink-0">
-            {/* 头部带折叠按钮 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <h3 className="font-medium text-gray-800">问答目录</h3>
-              <button
-                onClick={() => setLeftPanelCollapsed(true)}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                title="收起侧栏"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            </div>
+          <>
+            <div
+              style={{ width: leftPanelWidth }}
+              className="flex flex-col bg-white flex-shrink-0"
+            >
+              {/* 头部带折叠按钮 */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                <h3 className="font-medium text-gray-800">问答目录</h3>
+                <button
+                  onClick={() => setLeftPanelCollapsed(true)}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                  title="收起侧栏"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
 
-            {/* 问答目录 */}
-            <div className="flex-1 overflow-hidden">
-              <QADirectory />
-            </div>
+              {/* 问答目录 */}
+              <div className="flex-1 overflow-hidden">
+                <QADirectory />
+              </div>
 
-            {/* MiniMap 区域 */}
-            <div className="h-[160px] border-t border-gray-200 bg-gray-50 relative">
-              <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
-                <div className="text-center">
-                  <div className="text-2xl mb-1">🗺️</div>
-                  <div>缩略图</div>
+              {/* MiniMap 区域 */}
+              <div className="h-[160px] border-t border-gray-200 bg-gray-50 relative">
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">🗺️</div>
+                    <div>缩略图</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* 左侧拖拽手柄 */}
+            <div
+              onMouseDown={handleLeftMouseDown}
+              className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize flex-shrink-0 transition-colors"
+              title="拖拽调整宽度"
+            />
+          </>
         )}
 
         {/* 中间：思维导图 */}
@@ -237,12 +311,22 @@ export default function MapPage() {
           <MindMap onAskQuestion={handleAskQuestion} />
         </div>
 
+        {/* 右侧拖拽手柄 */}
+        {!rightPanelCollapsed && (
+          <div
+            onMouseDown={handleRightMouseDown}
+            className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize flex-shrink-0 transition-colors"
+            title="拖拽调整宽度"
+          />
+        )}
+
         {/* 右侧栏：对话面板 */}
         <ChatPanel
           selectedNode={selectedNode}
           onAskQuestion={handleAskQuestion}
           isCollapsed={rightPanelCollapsed}
           onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+          width={rightPanelWidth}
         />
       </div>
 
