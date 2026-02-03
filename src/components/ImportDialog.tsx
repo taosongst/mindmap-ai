@@ -8,6 +8,11 @@ interface ImportDialogProps {
   onClose: () => void
 }
 
+interface ChatGPTConversation {
+  title?: string
+  mapping?: Record<string, unknown>
+}
+
 type ImportMode = 'link' | 'json'
 
 export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
@@ -20,7 +25,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [conversations, setConversations] = useState<any[]>([])
+  const [conversations, setConversations] = useState<ChatGPTConversation[]>([])
   const [selectedConvIndex, setSelectedConvIndex] = useState<number>(0)
   const [result, setResult] = useState<{
     success: boolean
@@ -53,7 +58,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
       } else {
         setError('无法识别的文件格式，请确保是 ChatGPT 导出的 JSON 文件')
       }
-    } catch (err) {
+    } catch {
       setError('JSON 解析失败，请检查文件格式')
     }
   }
@@ -83,7 +88,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
       } else {
         setError(data.message || data.error || '导入失败，建议使用 JSON 导入')
       }
-    } catch (err) {
+    } catch {
       setError('网络错误，请重试')
     } finally {
       setLoading(false)
@@ -117,7 +122,7 @@ export function ImportDialog({ isOpen, onClose }: ImportDialogProps) {
       } else {
         setError(data.error || '导入失败')
       }
-    } catch (err) {
+    } catch {
       setError('网络错误，请重试')
     } finally {
       setLoading(false)
