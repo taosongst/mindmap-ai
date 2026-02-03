@@ -1,9 +1,52 @@
 'use client'
 
-import { memo, useState, useRef, useCallback } from 'react'
+import { memo, useState, useRef, useCallback, useMemo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { truncateText } from '@/lib/utils'
 import { NodeData, PotentialNodeData } from '@/types'
+
+// 从回答中提取主标题
+function extractHeadings(text: string, maxCount: number = 4): { headings: string[]; hasMore: boolean } {
+  const headings: string[] = []
+  const lines = text.split('\n')
+  let hasMore = false
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    // 匹配各种标题格式
+    // 中文数字标题：一、二、三、等
+    const chineseNumMatch = trimmed.match(/^[一二三四五六七八九十]+[、.．]\s*(.+)/)
+    // 阿拉伯数字标题：1. 2. 3. 等（但排除子列表如 1.1）
+    const arabicNumMatch = trimmed.match(/^(\d+)[.、．]\s*(?!\d)(.+)/)
+    // Markdown 标题：## ### 等
+    const mdHeadingMatch = trimmed.match(/^#{1,3}\s+(.+)/)
+    // 加粗标题：**xxx**
+    const boldMatch = trimmed.match(/^\*\*(.+?)\*\*\s*$/)
+
+    let heading = ''
+    if (chineseNumMatch) {
+      heading = trimmed
+    } else if (arabicNumMatch && parseInt(arabicNumMatch[1]) <= 10) {
+      heading = trimmed
+    } else if (mdHeadingMatch) {
+      heading = mdHeadingMatch[1]
+    } else if (boldMatch && trimmed.length < 50) {
+      heading = boldMatch[1]
+    }
+
+    if (heading && heading.length > 2 && heading.length < 80) {
+      if (headings.length >= maxCount) {
+        hasMore = true
+        break
+      }
+      headings.push(heading)
+    }
+  }
+
+  return { headings, hasMore }
+}
 
 interface QANodeData {
   nodeData: NodeData
@@ -57,6 +100,13 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
     }
     setShowHoverPreview(false)
   }, [])
+
+  // 提取回答中的主标题
+  const { headings, hasMoreHeadings } = useMemo(() => {
+    if (!primaryQA) return { headings: [], hasMoreHeadings: false }
+    const result = extractHeadings(primaryQA.answer, 4)
+    return { headings: result.headings, hasMoreHeadings: result.hasMore }
+  }, [primaryQA])
 
   if (!primaryQA) return null
 
@@ -123,16 +173,34 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
             <div className="text-sm font-medium text-gray-800 mb-3 pb-2 border-b border-gray-100">
               {primaryQA.question}
             </div>
-            {/* 回答预览 */}
-            <div className="text-xs text-gray-600 leading-relaxed line-clamp-6 whitespace-pre-wrap">
-              {truncateText(primaryQA.answer, 300)}
-            </div>
-            {/* 更多提示 */}
-            {primaryQA.answer.length > 300 && (
-              <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
-                点击节点查看完整内容...
+
+            {/* 内容预览：优先显示主标题，否则显示文本预览 */}
+            {headings.length >= 2 ? (
+              <div className="space-y-2">
+                <div className="text-xs text-gray-400 mb-1">内容大纲：</div>
+                {headings.map((heading, index) => (
+                  <div
+                    key={index}
+                    className="text-xs text-gray-700 flex items-start gap-2"
+                  >
+                    <span className="text-blue-500 flex-shrink-0">•</span>
+                    <span className="line-clamp-1">{heading}</span>
+                  </div>
+                ))}
+                {hasMoreHeadings && (
+                  <div className="text-xs text-gray-400 pl-4">...</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-xs text-gray-600 leading-relaxed line-clamp-6 whitespace-pre-wrap">
+                {truncateText(primaryQA.answer, 300)}
               </div>
             )}
+
+            {/* 更多提示 */}
+            <div className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-100">
+              点击节点查看完整内容
+            </div>
           </div>
           {/* 左侧箭头 */}
           <div className="absolute top-4 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-white"></div>
