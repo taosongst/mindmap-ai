@@ -69,7 +69,9 @@ export function ChatPanel({
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    onAskQuestion(input.trim())
+    // 在节点模式下，如果有选中节点，新问题自动连接到该节点
+    const parentNodeId = activeTab === 'node' && selectedNode ? selectedNode.id : undefined
+    onAskQuestion(input.trim(), parentNodeId)
     setInput('')
   }
 
