@@ -35,11 +35,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No QA found for node' }, { status: 404 })
     }
 
+    // 获取该地图中所有已有的问题（避免推荐重复的）
+    const existingQAs = await prisma.qA.findMany({
+      where: { mapId: node.mapId },
+      select: { question: true },
+    })
+    const existingQuestions = existingQAs.map((qa) => qa.question)
+
     // 调用 AI 重新生成推荐问题
     const suggestedQuestions = await regenerateSuggestions(
       primaryQA.question,
       primaryQA.answer,
-      provider
+      provider,
+      existingQuestions
     )
 
     // 删除旧的 AI 推荐的潜在节点

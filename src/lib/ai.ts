@@ -26,6 +26,7 @@ const SYSTEM_PROMPT_JSON = `你是一个知识探索助手，帮助用户学习�
 注意：
 - 回答应该信息丰富但不过长
 - 推荐的问题应该与当前话题相关，帮助用户深入或扩展理解
+- **重要**：推荐的问题绝对不能与对话历史中用户已经问过的问题相同或语义相似
 - 始终返回有效的JSON格式`
 
 // 流式模式的 system prompt（使用分隔符）
@@ -50,7 +51,8 @@ const SYSTEM_PROMPT_STREAM = `你是一个知识探索助手，帮助用户学�
 
 注意：
 - 回答应该信息丰富但不过长
-- 推荐的问题应该与当前话题相关
+- 推荐的问题应该与当前话题相关，帮助用户深入或扩展理解
+- **重要**：推荐的问题绝对不能与对话历史中用户已经问过的问题相同或语义相似。请仔细查看对话历史，避免推荐任何重复的问题
 - 分隔符必须是 ---SUGGESTIONS--- 并且独占一行`
 
 // 非流式调用（保持兼容）
@@ -203,6 +205,7 @@ const SYSTEM_PROMPT_SUGGESTIONS = `你是一个知识探索助手。根据提供
 1. 问题应该与原问答内容相关，帮助用户深入或扩展理解
 2. 问题应该多样化，覆盖不同的探索方向
 3. 问题应该简洁明了
+4. **重要**：绝对不要推荐与"已探索的问题"列表中相同或语义相似的问题。这些问题用户已经问过了，推荐重复的问题没有价值。
 
 请直接返回一个JSON数组，不要有其他内容：
 ["问题1", "问题2", "问题3", "问题4", "问题5"]`
@@ -210,9 +213,16 @@ const SYSTEM_PROMPT_SUGGESTIONS = `你是一个知识探索助手。根据提供
 export async function regenerateSuggestions(
   question: string,
   answer: string,
-  provider: AIProvider
+  provider: AIProvider,
+  existingQuestions: string[] = []
 ): Promise<string[]> {
-  const userMessage = `原问题：${question}\n\n原回答：${answer}\n\n请为这个问答生成新的后续探索问题。`
+  let userMessage = `原问题：${question}\n\n原回答：${answer}`
+
+  if (existingQuestions.length > 0) {
+    userMessage += `\n\n已探索的问题（请勿推荐相同或相似的）：\n${existingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
+  }
+
+  userMessage += `\n\n请为这个问答生成新的后续探索问题，确保不与已探索的问题重复。`
 
   let responseText: string
 
