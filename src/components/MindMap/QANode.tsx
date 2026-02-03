@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo, useState, useRef, useCallback } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { truncateText } from '@/lib/utils'
 import { NodeData, PotentialNodeData } from '@/types'
@@ -33,6 +33,30 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
   } = data
   const primaryQA = nodeData.qas[0]
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showHoverPreview, setShowHoverPreview] = useState(false)
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 鼠标进入节点
+  const handleMouseEnter = useCallback(() => {
+    // 清除之前的定时器
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+    }
+    // 1秒后显示预览
+    hoverTimerRef.current = setTimeout(() => {
+      setShowHoverPreview(true)
+    }, 1000)
+  }, [])
+
+  // 鼠标离开节点
+  const handleMouseLeave = useCallback(() => {
+    // 清除定时器
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setShowHoverPreview(false)
+  }, [])
 
   if (!primaryQA) return null
 
@@ -49,6 +73,8 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
           ${isSelected ? 'border-blue-500 shadow-lg' : 'border-gray-200 hover:border-blue-300'}
         `}
         onClick={() => onSelect(isSelected ? null : id)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <Handle type="target" position={Position.Top} className="!bg-gray-400" />
 
@@ -84,6 +110,34 @@ function QANodeComponent({ data, id }: NodeProps<QANodeData>) {
           className="!bg-gray-400"
         />
       </div>
+
+      {/* 悬停预览弹窗 */}
+      {showHoverPreview && (
+        <div
+          className="absolute left-full top-0 ml-3 z-30 pointer-events-none"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-[280px] max-w-[400px]">
+            {/* 问题标题 */}
+            <div className="text-sm font-medium text-gray-800 mb-3 pb-2 border-b border-gray-100">
+              {primaryQA.question}
+            </div>
+            {/* 回答预览 */}
+            <div className="text-xs text-gray-600 leading-relaxed line-clamp-6 whitespace-pre-wrap">
+              {truncateText(primaryQA.answer, 300)}
+            </div>
+            {/* 更多提示 */}
+            {primaryQA.answer.length > 300 && (
+              <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100">
+                点击节点查看完整内容...
+              </div>
+            )}
+          </div>
+          {/* 左侧箭头 */}
+          <div className="absolute top-4 -left-2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-white"></div>
+        </div>
+      )}
 
       {/* 底部按钮组 */}
       {(hasPotentialNodes || showCollapseButton) && (
