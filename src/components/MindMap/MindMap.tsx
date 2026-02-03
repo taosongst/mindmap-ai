@@ -37,7 +37,6 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     usedPotentialIds,
     selectedNodeId,
     selectNode,
-    hideNode,
     markPotentialAsUsed,
     updateNode,
     addEdge: addStoreEdge,
@@ -348,18 +347,6 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     },
     [updateNode]
   )
-
-  const handleHideNode = async (id: string) => {
-    hideNode(id)
-    selectNode(null)
-
-    // 同步到后端
-    await fetch('/api/nodes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, isHidden: true }),
-    })
-  }
 
   return (
     <div className="w-full h-full relative">

@@ -1,7 +1,7 @@
 'use client'
 
 import { NodeData, PotentialNodeData } from '@/types'
-import ReactMarkdown from 'react-markdown'
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 
 interface NodeDetailProps {
   node: NodeData | null
@@ -50,9 +50,10 @@ export function NodeDetail({
             {/* 回答 */}
             <div>
               <div className="text-xs text-gray-400 mb-1">回答</div>
-              <div className="prose prose-sm max-w-none text-gray-700">
-                <ReactMarkdown>{qa.answer}</ReactMarkdown>
-              </div>
+              <MarkdownRenderer
+                content={qa.answer}
+                className="prose prose-sm max-w-none text-gray-700"
+              />
             </div>
 
             {/* 来源 */}

@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect, useRef } from 'react'
 import { useMapStore } from '@/hooks/useMapStore'
 import { NodeData, QAData, PotentialNodeData, AI_MODELS } from '@/types'
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 
 type TabMode = 'chat' | 'node'
 
@@ -187,7 +188,10 @@ export function ChatPanel({
                 {/* AI 回答 */}
                 <div className="flex justify-start">
                   <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%]">
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">{qa.answer}</p>
+                    <MarkdownRenderer
+                      content={qa.answer}
+                      className="text-sm text-gray-800 prose prose-sm max-w-none"
+                    />
                     {/* 推荐问题 */}
                     {qa.suggestedQuestions && qa.suggestedQuestions.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
@@ -223,10 +227,11 @@ export function ChatPanel({
                 {/* AI 回答（流式） */}
                 <div className="flex justify-start">
                   <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%]">
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap">
-                      {streamingAnswer.split('---SUGGESTIONS---')[0]}
-                      <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-0.5" />
-                    </p>
+                    <MarkdownRenderer
+                      content={streamingAnswer.split('---SUGGESTIONS---')[0]}
+                      className="text-sm text-gray-800 prose prose-sm max-w-none"
+                    />
+                    <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-0.5" />
                   </div>
                 </div>
               </div>
@@ -255,7 +260,10 @@ export function ChatPanel({
                   {selectedNode.qas.map((qa: QAData) => (
                     <div key={qa.id} className="space-y-2">
                       <p className="text-sm font-medium text-gray-800">{qa.question}</p>
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{qa.answer}</p>
+                      <MarkdownRenderer
+                        content={qa.answer}
+                        className="text-sm text-gray-600 prose prose-sm max-w-none"
+                      />
                     </div>
                   ))}
                 </div>
