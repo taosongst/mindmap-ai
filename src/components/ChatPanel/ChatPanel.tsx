@@ -253,19 +253,26 @@ export function ChatPanel({
           <div className="p-4">
             {selectedNode ? (
               <div className="space-y-4">
-                {/* 节点信息 */}
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h3 className="text-sm font-medium text-blue-800 mb-2">当前节点</h3>
-                  {selectedNode.qas.map((qa: QAData) => (
-                    <div key={qa.id} className="space-y-2">
-                      <p className="text-sm font-medium text-gray-800">{qa.question}</p>
-                      <MarkdownRenderer
-                        content={qa.answer}
-                        className="text-sm text-gray-600 prose prose-sm max-w-none"
-                      />
+                {/* 节点问答 - ChatGPT 风格 */}
+                {selectedNode.qas.map((qa: QAData) => (
+                  <div key={qa.id} className="space-y-3">
+                    {/* 用户问题 - 右对齐 */}
+                    <div className="flex justify-end pl-8">
+                      <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[90%]">
+                        <p className="text-sm">{qa.question}</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    {/* AI 回答 - 左对齐 */}
+                    <div className="flex justify-start pr-8">
+                      <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-tl-sm max-w-[90%]">
+                        <MarkdownRenderer
+                          content={qa.answer}
+                          className="text-sm text-gray-800 prose prose-sm max-w-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
                 {/* 重新生成推荐问题按钮 */}
                 <button
