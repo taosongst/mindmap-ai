@@ -13,6 +13,7 @@ interface ChatPanelProps {
   isCollapsed: boolean
   onToggleCollapse: () => void
   width?: number
+  isFullWidth?: boolean
 }
 
 export function ChatPanel({
@@ -21,6 +22,7 @@ export function ChatPanel({
   isCollapsed,
   onToggleCollapse,
   width,
+  isFullWidth = false,
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [activeTab, setActiveTab] = useState<TabMode>('chat')
@@ -135,16 +137,19 @@ export function ChatPanel({
   }
 
   return (
-    <div style={{ width: width || 380 }} className="flex flex-col bg-white h-full flex-shrink-0 min-h-0">
+    <div
+      style={isFullWidth ? undefined : { width: width || 380 }}
+      className={`flex flex-col h-full min-h-0 ${isFullWidth ? 'flex-1 bg-[#212121]' : 'flex-shrink-0 bg-white'}`}
+    >
       {/* 头部：标签切换 + 折叠按钮 */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-2">
+      <div className={`flex items-center justify-between px-2 ${isFullWidth ? 'border-b border-[#444]' : 'border-b border-gray-200'}`}>
         <div className="flex">
           <button
             onClick={() => setActiveTab('chat')}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'chat'
-                ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? isFullWidth ? 'text-white border-white' : 'text-blue-600 border-blue-600'
+                : isFullWidth ? 'text-[#888] border-transparent hover:text-[#ccc]' : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
             对话模式
@@ -153,58 +158,72 @@ export function ChatPanel({
             onClick={() => setActiveTab('node')}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'node'
-                ? 'text-blue-600 border-blue-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? isFullWidth ? 'text-white border-white' : 'text-blue-600 border-blue-600'
+                : isFullWidth ? 'text-[#888] border-transparent hover:text-[#ccc]' : 'text-gray-500 border-transparent hover:text-gray-700'
             }`}
           >
             节点模式
           </button>
         </div>
-        <button
-          onClick={onToggleCollapse}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-          title="收起面板"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Tab 切换视图提示 */}
+          {isFullWidth && (
+            <span className="text-xs text-[#888] px-2 py-1 bg-[#2f2f2f] rounded">
+              按 Tab 切换视图
+            </span>
+          )}
+          {!isFullWidth && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+              title="收起面板"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 内容区域 */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
+      <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto min-h-0 ${isFullWidth ? 'bg-[#212121]' : ''}`}>
         {activeTab === 'chat' ? (
-          // ========== 对话模式 ==========
-          <div className="p-4 space-y-4">
+          // ========== 对话模式 - ChatGPT 风格 ==========
+          <div className={`py-6 space-y-6 ${isFullWidth ? 'max-w-3xl mx-auto px-4' : 'p-4'}`}>
             {/* 所有历史对话 */}
             {allQAs.map((qa: QAData) => (
-              <div key={qa.id} className="space-y-3">
-                {/* 用户问题 */}
+              <div key={qa.id} className="space-y-6">
+                {/* 用户问题 - ChatGPT 风格 */}
                 <div className="flex justify-end">
-                  <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
-                    <p className="text-sm">{qa.question}</p>
+                  <div className={`${isFullWidth ? 'bg-[#2f2f2f] text-[#ececec]' : 'bg-[#343541] text-white'} px-5 py-3 rounded-3xl max-w-[85%]`}>
+                    <p className={`${isFullWidth ? 'text-base' : 'text-sm'} leading-relaxed`}>{qa.question}</p>
                   </div>
                 </div>
-                {/* AI 回答 */}
+                {/* AI 回答 - ChatGPT 风格 */}
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%]">
+                  <div className={`${isFullWidth ? 'text-[#ececec]' : ''} max-w-full`}>
                     <MarkdownRenderer
                       content={qa.answer}
-                      className="text-sm text-gray-800 prose prose-sm max-w-none"
+                      className={`${isFullWidth ? 'text-base text-[#ececec] prose-invert' : 'text-sm text-gray-800'} prose max-w-none leading-relaxed`}
                     />
                     {/* 推荐问题 */}
                     {qa.suggestedQuestions && qa.suggestedQuestions.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-2">继续探索：</p>
-                        <div className="flex flex-wrap gap-1">
+                      <div className={`mt-4 pt-4 ${isFullWidth ? 'border-t border-[#444]' : 'border-t border-gray-200'}`}>
+                        <p className={`text-xs ${isFullWidth ? 'text-[#888]' : 'text-gray-500'} mb-3`}>继续探索：</p>
+                        <div className="flex flex-wrap gap-2">
                           {qa.suggestedQuestions.slice(0, 3).map((sq, i) => (
                             <button
                               key={i}
                               onClick={() => onAskQuestion(sq)}
                               disabled={isLoading}
-                              className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-full border border-blue-200 disabled:opacity-50"
+                              className={`text-sm px-3 py-2 rounded-xl border transition-colors disabled:opacity-50 ${
+                                isFullWidth
+                                  ? 'text-[#ececec] border-[#444] hover:bg-[#2f2f2f]'
+                                  : 'text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
                             >
-                              {sq.length > 25 ? sq.slice(0, 25) + '...' : sq}
+                              {sq.length > 40 ? sq.slice(0, 40) + '...' : sq}
                             </button>
                           ))}
                         </div>
@@ -217,21 +236,21 @@ export function ChatPanel({
 
             {/* 当前流式响应 */}
             {isStreaming && (
-              <div className="space-y-3">
+              <div className="space-y-6">
                 {/* 用户问题 */}
                 <div className="flex justify-end">
-                  <div className="bg-blue-500 text-white px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%]">
-                    <p className="text-sm">{currentQuestion}</p>
+                  <div className={`${isFullWidth ? 'bg-[#2f2f2f] text-[#ececec]' : 'bg-[#343541] text-white'} px-5 py-3 rounded-3xl max-w-[85%]`}>
+                    <p className={`${isFullWidth ? 'text-base' : 'text-sm'} leading-relaxed`}>{currentQuestion}</p>
                   </div>
                 </div>
                 {/* AI 回答（流式） */}
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-tl-sm max-w-[85%]">
+                  <div className={`${isFullWidth ? 'text-[#ececec]' : ''} max-w-full`}>
                     <MarkdownRenderer
                       content={streamingAnswer.split('---SUGGESTIONS---')[0]}
-                      className="text-sm text-gray-800 prose prose-sm max-w-none"
+                      className={`${isFullWidth ? 'text-base text-[#ececec] prose-invert' : 'text-sm text-gray-800'} prose max-w-none leading-relaxed`}
                     />
-                    <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-0.5" />
+                    <span className={`inline-block w-2 h-5 ${isFullWidth ? 'bg-[#ececec]' : 'bg-gray-400'} animate-pulse ml-0.5`} />
                   </div>
                 </div>
               </div>
@@ -239,10 +258,10 @@ export function ChatPanel({
 
             {/* 空状态 */}
             {allQAs.length === 0 && !isStreaming && (
-              <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+              <div className={`flex items-center justify-center h-60 ${isFullWidth ? 'text-[#888]' : 'text-gray-400'}`}>
                 <div className="text-center">
-                  <div className="text-3xl mb-2">💬</div>
-                  <p>输入问题开始探索</p>
+                  <div className="text-4xl mb-3">💬</div>
+                  <p className={isFullWidth ? 'text-lg' : 'text-sm'}>输入问题开始探索</p>
                 </div>
               </div>
             )}
@@ -365,15 +384,19 @@ export function ChatPanel({
       </div>
 
       {/* 输入区域 - 固定在底部 */}
-      <div className="border-t border-gray-200 p-4 bg-white">
-        <form onSubmit={handleSubmit} className="space-y-3">
+      <div className={`p-4 ${isFullWidth ? 'bg-[#212121]' : 'border-t border-gray-200 bg-white'}`}>
+        <form onSubmit={handleSubmit} className={`space-y-3 ${isFullWidth ? 'max-w-3xl mx-auto' : ''}`}>
           {/* AI 模型选择器 */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">模型:</span>
+            <span className={`text-xs ${isFullWidth ? 'text-[#888]' : 'text-gray-500'}`}>模型:</span>
             <select
               value={aiModel}
               onChange={(e) => setAIModel(e.target.value as typeof aiModel)}
-              className="px-2 py-1 text-xs border border-gray-200 rounded bg-gray-50 text-gray-600"
+              className={`px-2 py-1 text-xs border rounded ${
+                isFullWidth
+                  ? 'border-[#444] bg-[#2f2f2f] text-[#ececec]'
+                  : 'border-gray-200 bg-gray-50 text-gray-600'
+              }`}
               disabled={isLoading}
             >
               {AI_MODELS.map((model) => (
@@ -384,8 +407,8 @@ export function ChatPanel({
             </select>
           </div>
 
-          {/* 输入框和发送按钮 */}
-          <div className="flex gap-2">
+          {/* 输入框和发送按钮 - ChatGPT 风格 */}
+          <div className={`flex gap-3 items-end ${isFullWidth ? 'bg-[#2f2f2f] rounded-3xl p-2 pl-4' : ''}`}>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -397,13 +420,22 @@ export function ChatPanel({
               }}
               placeholder="输入你的问题..."
               disabled={isLoading}
-              rows={3}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 resize-none"
+              rows={isFullWidth ? 1 : 3}
+              className={`flex-1 py-2 resize-none focus:outline-none disabled:opacity-50 ${
+                isFullWidth
+                  ? 'bg-transparent text-[#ececec] placeholder:text-[#888] text-base'
+                  : 'px-3 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50'
+              }`}
+              style={isFullWidth ? { maxHeight: '200px' } : undefined}
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors self-end"
+              className={`transition-colors ${
+                isFullWidth
+                  ? 'p-2 rounded-full bg-white text-black hover:bg-gray-200 disabled:bg-[#444] disabled:text-[#888] disabled:cursor-not-allowed'
+                  : 'px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed'
+              }`}
             >
               {isLoading ? (
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -421,6 +453,10 @@ export function ChatPanel({
                     fill="currentColor"
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
+                </svg>
+              ) : isFullWidth ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                 </svg>
               ) : (
                 '发送'

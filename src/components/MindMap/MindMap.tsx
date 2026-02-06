@@ -44,6 +44,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     collapsedNodeIds,
     toggleCollapseChildren,
     showAnswerPreview,
+    hideNode,
   } = useMapStore()
 
   // 用于跟踪已知节点ID，检测新增节点
@@ -59,6 +60,28 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
       onAskQuestion(data.question, data.parentNodeId)
     },
     [markPotentialAsUsed, onAskQuestion]
+  )
+
+  // 处理隐藏节点（删除展示层，保留context）
+  const handleHideNode = useCallback(
+    async (nodeId: string) => {
+      // 先删除与该节点相关的所有边
+      const relatedEdges = storeEdges.filter(
+        (edge) => edge.sourceNodeId === nodeId || edge.targetNodeId === nodeId
+      )
+      for (const edge of relatedEdges) {
+        removeStoreEdge(edge.id)
+      }
+
+      // 隐藏节点
+      hideNode(nodeId)
+
+      // 如果当前选中的是这个节点，取消选中
+      if (selectedNodeId === nodeId) {
+        selectNode(null)
+      }
+    },
+    [storeEdges, removeStoreEdge, hideNode, selectedNodeId, selectNode]
   )
 
   // 获取指定节点的潜在子节点
@@ -174,6 +197,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
           isChildrenCollapsed: collapsedNodeIds.has(node.id),
           onToggleCollapseChildren: toggleCollapseChildren,
           showAnswerPreview,
+          onHideNode: handleHideNode,
         },
       })
 
@@ -207,7 +231,7 @@ export function MindMap({ onAskQuestion }: MindMapProps) {
     })
 
     return { flowNodes, flowEdges }
-  }, [storeNodes, storeEdges, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick, collapsedNodeIds, toggleCollapseChildren, isCollapsedByAncestor, parentMap, childrenSet, showAnswerPreview])
+  }, [storeNodes, storeEdges, selectedNodeId, selectNode, getPotentialNodesForNode, usedPotentialIds, handlePotentialClick, collapsedNodeIds, toggleCollapseChildren, isCollapsedByAncestor, parentMap, childrenSet, showAnswerPreview, handleHideNode])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes)
   const [edges, setEdges, defaultOnEdgesChange] = useEdgesState(flowEdges)

@@ -12,8 +12,11 @@ export default function MapPage() {
   const mapId = params.id as string
   const [error, setError] = useState<string | null>(null)
 
-  // 面板折叠状态
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+  // 视图模式：'chat' = 对话为主(90%)，'mindmap' = 思维导图为主
+  const [viewMode, setViewMode] = useState<'chat' | 'mindmap'>('mindmap')
+
+  // 面板折叠状态 - 左侧默认折叠
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
 
   // 面板宽度状态
@@ -51,6 +54,25 @@ export default function MapPage() {
   const handleRightMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     setIsDraggingRight(true)
+  }, [])
+
+  // Tab 键切换视图模式
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 如果用户在输入框中，不拦截 Tab
+      const activeElement = document.activeElement
+      const isInputFocused = activeElement?.tagName === 'INPUT' ||
+                             activeElement?.tagName === 'TEXTAREA' ||
+                             activeElement?.getAttribute('contenteditable') === 'true'
+
+      if (e.key === 'Tab' && !isInputFocused) {
+        e.preventDefault()
+        setViewMode(prev => prev === 'chat' ? 'mindmap' : 'chat')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   // 处理鼠标移动和释放
@@ -243,6 +265,18 @@ export default function MapPage() {
         </div>
         {/* 显示设置 */}
         <div className="flex items-center gap-3">
+          {/* 视图模式切换按钮 */}
+          <button
+            onClick={() => setViewMode(prev => prev === 'chat' ? 'mindmap' : 'chat')}
+            className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+              viewMode === 'chat'
+                ? 'bg-blue-50 border-blue-200 text-blue-600'
+                : 'bg-gray-50 border-gray-200 text-gray-500'
+            }`}
+            title="按 Tab 切换视图模式"
+          >
+            {viewMode === 'chat' ? '💬 对话模式' : '🗺️ 导图模式'}
+          </button>
           <button
             onClick={toggleAnswerPreview}
             className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
@@ -259,8 +293,8 @@ export default function MapPage() {
 
       {/* 主体区域 - 三栏布局 */}
       <div ref={containerRef} className="flex-1 flex overflow-hidden min-h-0">
-        {/* 左侧栏：问答目录 + 缩略图 */}
-        {leftPanelCollapsed ? (
+        {/* 左侧栏：问答目录 + 缩略图 - 对话模式下隐藏 */}
+        {viewMode === 'chat' ? null : leftPanelCollapsed ? (
           // 折叠状态
           <div className="w-10 flex flex-col items-center border-r border-gray-200 bg-white flex-shrink-0">
             <button
@@ -322,13 +356,15 @@ export default function MapPage() {
           </>
         )}
 
-        {/* 中间：思维导图 */}
-        <div className="flex-1 overflow-hidden">
-          <MindMap onAskQuestion={handleAskQuestion} />
-        </div>
+        {/* 中间：思维导图 - 对话模式下隐藏 */}
+        {viewMode === 'mindmap' && (
+          <div className="flex-1 overflow-hidden">
+            <MindMap onAskQuestion={handleAskQuestion} />
+          </div>
+        )}
 
-        {/* 右侧拖拽手柄 */}
-        {!rightPanelCollapsed && (
+        {/* 右侧拖拽手柄 - 对话模式下隐藏 */}
+        {viewMode === 'mindmap' && !rightPanelCollapsed && (
           <div
             onMouseDown={handleRightMouseDown}
             className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize flex-shrink-0 transition-colors"
@@ -336,13 +372,14 @@ export default function MapPage() {
           />
         )}
 
-        {/* 右侧栏：对话面板 */}
+        {/* 右侧栏：对话面板 - 对话模式下占据剩余空间 */}
         <ChatPanel
           selectedNode={selectedNode}
           onAskQuestion={handleAskQuestion}
-          isCollapsed={rightPanelCollapsed}
+          isCollapsed={viewMode === 'mindmap' ? rightPanelCollapsed : false}
           onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
-          width={rightPanelWidth}
+          width={viewMode === 'chat' ? undefined : rightPanelWidth}
+          isFullWidth={viewMode === 'chat'}
         />
       </div>
 
