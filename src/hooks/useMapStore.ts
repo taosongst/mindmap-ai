@@ -69,7 +69,7 @@ export const useMapStore = create<MapState>((set, get) => ({
   usedPotentialIds: new Set(),
   selectedNodeId: null,
   isLoading: false,
-  aiModel: 'gpt-4o-mini',
+  aiModel: (typeof window !== 'undefined' && localStorage.getItem('aiModel') as AIModel) || 'gpt-4o-mini',
   collapsedNodeIds: new Set(),
   showAnswerPreview: true, // 默认显示预览
   isStreaming: false,
@@ -181,7 +181,12 @@ export const useMapStore = create<MapState>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  setAIModel: (model) => set({ aiModel: model }),
+  setAIModel: (model) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiModel', model)
+    }
+    set({ aiModel: model })
+  },
 
   addQA: (qa) =>
     set((state) => ({
