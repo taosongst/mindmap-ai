@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #212121;
+      color: #ececec;
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .conversation-info {
+      background: #2f2f2f;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .conversation-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #ececec;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .conversation-id {
+      font-size: 11px;
+      color: #666;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+
+    .qa-count {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      font-weight: 600;
+      color: #10a37f;
+    }
+
+    .qa-count .label {
+      font-size: 12px;
+      color: #888;
+      font-weight: 400;
+    }
+
+    .no-conversation {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    .no-conversation .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #2f2f2f;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.connected {
+      background: #10a37f;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    .status-dot.syncing {
+      background: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary {
+      background: #10a37f;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0d8a6a;
+    }
+
+    .btn-primary:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: #ececec;
+    }
+
+    .btn-secondary:hover {
+      background: #444;
+    }
+
+    .result {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .result.success {
+      background: #1a3a2a;
+      border: 1px solid #10a37f;
+      color: #6ee7b7;
+    }
+
+    .result.error {
+      background: #3d1f1f;
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    .footer {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+    }
+
+    .footer a {
+      color: #10a37f;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span>🗺️</span>
+    <h1>MindMap AI Sync</h1>
+  </div>
+
+  <div class="status">
+    <div id="statusDot" class="status-dot disconnected"></div>
+    <span id="statusText">检查连接中...</span>
+  </div>
+
+  <div id="conversationInfo" class="conversation-info" style="display: none;">
+    <div id="conversationTitle" class="conversation-title">-</div>
+    <div id="conversationId" class="conversation-id">-</div>
+    <div class="qa-count">
+      <span id="qaCount">0</span>
+      <span class="label">组问答可同步</span>
+    </div>
+  </div>
+
+  <div id="noConversation" class="no-conversation">
+    <div class="icon">💬</div>
+    <div>请打开一个 ChatGPT 对话</div>
+  </div>
+
+  <button id="syncBtn" class="btn-primary" disabled>同步到 MindMap AI</button>
+  <button id="openBtn" class="btn-secondary">打开 MindMap AI</button>
+
+  <div id="result" class="result" style="display: none;"></div>
+
+  <div class="footer">
+    确保 MindMap AI 正在运行 (localhost:3000)
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

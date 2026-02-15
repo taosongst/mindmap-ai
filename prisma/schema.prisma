@@ -34,6 +34,9 @@ model MindMap {
   nodes          Node[]
   potentialNodes PotentialNode[]
   edges          Edge[]
+  // 外部同步字段
+  externalId     String?         @unique // ChatGPT conversation ID
+  lastSyncedAt   DateTime?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 }
@@ -47,8 +50,9 @@ model QA {
   answer             String
   suggestedQuestions String   @default("[]") // JSON array
   timestamp          Int // 对话中的顺序
-  source             String   @default("user") // 'user' | 'ai_suggestion' | 'forked_author'
+  source             String   @default("user") // 'user' | 'ai_suggestion' | 'forked_author' | 'chatgpt'
   sourceAuthorId     String?
+  externalIndex      Int?     // ChatGPT 中的消息序号（用于去重）
   createdAt          DateTime @default(now())
 
   // 被节点引用
